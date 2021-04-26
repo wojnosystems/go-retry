@@ -87,9 +87,7 @@ func main() {
 
 common.TimeThis and common.NewTimeSet are helper methods that record time differences. They're not involved in the retry logic and only serve to help you understand how attempts and delays between attempts work.
 
-The context controls how long the retry will wait as well. If the last request failed and the library would sleep, the sleep should not sleep much longer than the context deadline. It will not, of course, be perfect. However, it should help prevent the retry library from sleeping for an unreasonably long time after your context expires.
-
-In the above example, dialer is a retry configuration. It tells the library how it should retry your function.
+The context controls how long the retry will wait as well. If the last request failed and the library would have slept, the sleep should not sleep much longer than the context deadline. It will not, of course, be perfect. However, it should help prevent the retry library from sleeping for an unreasonably long time after your context expires.
 
 ### Outputs
 
@@ -220,7 +218,7 @@ tried 10 times taking 700.496801ms
 
 ## Retry Forever
 
-This will retry without limit until you either return a success or you return an non-retryable error.
+This will retry without limit until you either return `Success` or you return a non-retryable error.
 
 ```go
 package main
