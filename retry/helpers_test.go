@@ -4,12 +4,13 @@ import (
 	"errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/wojnosystems/go-retry/examples/common"
+	"github.com/wojnosystems/go-retry/retryAgain"
 	"testing"
 	"time"
 )
 
 var errFake = errors.New("fake")
-var errAgain = &again{wrapped: errors.New("again")}
+var errAgain = retryAgain.Error(errors.New("again"))
 var errOutOfErrs = errors.New("ran out of errors")
 
 type retryOccurs struct {

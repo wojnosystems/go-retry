@@ -1,7 +1,7 @@
 package retry
 
-var Success = error(nil)
+import "github.com/wojnosystems/go-retry/core"
 
 type Retrier interface {
-	Retry(func() (err error)) (err error)
+	Retry(cb core.CallbackFunc) (err error)
 }

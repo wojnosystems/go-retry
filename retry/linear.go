@@ -1,24 +1,21 @@
 package retry
 
 import (
-	"math"
+	"github.com/wojnosystems/go-retry/core"
 	"time"
 )
 
 // Linear retries, but multiplies the InitialWaitBetweenAttempts by the growth factor and adds it to the
 // previous wait time each attempt. This allows for an un-bounded linearly-growing backoff.
+// BackoffTime(i) = InitialWaitBetweenAttempts * (1 + GrowthFactor*i)
 type Linear struct {
 	InitialWaitBetweenAttempts time.Duration
 	GrowthFactor               float64
 }
 
-func (c *Linear) Retry(cb func() (err error)) (err error) {
-	i := uint64(0)
-	return loopForever(cb, func() {
+func (c *Linear) Retry(cb core.CallbackFunc) (err error) {
+	return core.LoopForever(cb, func(i uint64) {
 		sleepTime := linearSleepTime(c.InitialWaitBetweenAttempts, c.GrowthFactor, i)
-		if i < math.MaxUint64 {
-			i++
-		}
 		time.Sleep(sleepTime)
 	})
 }

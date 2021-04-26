@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/wojnosystems/go-retry/examples/common"
 	"github.com/wojnosystems/go-retry/retry"
+	"github.com/wojnosystems/go-retry/retryAgain"
 	"time"
 )
 
@@ -20,7 +21,7 @@ func main() {
 		}).Retry(func() (err error) {
 			fmt.Println(timer.SinceLast())
 			tries++
-			return retry.Again(errors.New("simulated error"))
+			return retryAgain.Error(errors.New("simulated error"))
 		})
 
 	})

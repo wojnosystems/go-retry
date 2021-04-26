@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/wojnosystems/go-retry/examples/common"
 	"github.com/wojnosystems/go-retry/retry"
+	"github.com/wojnosystems/go-retry/retryAgain"
+	"github.com/wojnosystems/go-retry/retryStop"
 	"time"
 )
 
@@ -14,16 +16,16 @@ func main() {
 
 		timer := common.NewTimeSet()
 
-		_ = (&retry.Linear{
+		_ = (&retry.Exponential{
 			InitialWaitBetweenAttempts: 10 * time.Millisecond,
 			GrowthFactor:               1.0,
 		}).Retry(func() (err error) {
 			fmt.Println(timer.SinceLast())
-			if tries < 10 {
+			if tries < 8 {
 				tries++
-				return retry.Again(errors.New("simulated error"))
+				return retryAgain.Error(errors.New("simulated error"))
 			}
-			return retry.Success
+			return retryStop.Success
 		})
 
 	})

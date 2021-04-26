@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/wojnosystems/go-retry/examples/common"
 	"github.com/wojnosystems/go-retry/retry"
+	"github.com/wojnosystems/go-retry/retryAgain"
 	"net"
 	"time"
 )
@@ -24,14 +25,14 @@ func main() {
 			socket, dialErr := net.Dial("tcp", "localhost:9999")
 			if dialErr != nil {
 				// all dialErrs are retried
-				return retry.Again(dialErr)
+				return retryAgain.Error(dialErr)
 			}
 
 			// Write errors are NOT retried
 			_, writeErr := socket.Write([]byte("some payload"))
 
 			// if writeErr is nil, success!
-			// if writeErr is not wrapped in retry.Again, retry will stop retrying and return the
+			// if writeErr is not wrapped in retry.Error, retry will stop retrying and return the
 			// error to the caller
 			return writeErr
 		})

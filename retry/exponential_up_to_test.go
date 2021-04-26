@@ -1,6 +1,7 @@
 package retry
 
 import (
+	"github.com/wojnosystems/go-retry/retryStop"
 	"testing"
 	"time"
 )
@@ -17,7 +18,7 @@ func TestExponentialUpTo_Retry(t *testing.T) {
 				MaxAttempts:                10,
 			},
 			retryOccurs: retryOccurs{
-				errs:                  []error{Success},
+				errs:                  []error{retryStop.Success},
 				expectedDurationLower: time.Duration(0),
 				expectedDurationUpper: 500 * time.Millisecond,
 			},
@@ -29,7 +30,7 @@ func TestExponentialUpTo_Retry(t *testing.T) {
 				MaxAttempts:                10,
 			},
 			retryOccurs: retryOccurs{
-				errs: []error{errAgain, errAgain, errAgain, errAgain, Success},
+				errs: []error{errAgain, errAgain, errAgain, errAgain, retryStop.Success},
 				// 10ms + 15ms + 22.5ms + 33.75ms = 81.25ms
 				expectedDurationLower: 76 * time.Millisecond,
 				expectedDurationUpper: 87 * time.Millisecond,
@@ -43,7 +44,7 @@ func TestExponentialUpTo_Retry(t *testing.T) {
 			},
 			retryOccurs: retryOccurs{
 				errs:        []error{errAgain, errAgain, errAgain, errAgain, errAgain},
-				expectedErr: errAgain.err(),
+				expectedErr: errAgain.Err(),
 				// 10ms + 15ms + 22.5ms + 33.75ms = 81.25ms
 				expectedDurationLower: 76 * time.Millisecond,
 				expectedDurationUpper: 87 * time.Millisecond,
