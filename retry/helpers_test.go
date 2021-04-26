@@ -1,6 +1,7 @@
 package retry
 
 import (
+	"context"
 	"errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/wojnosystems/go-retry/examples/common"
@@ -21,9 +22,11 @@ type retryOccurs struct {
 }
 
 func (o *retryOccurs) Assert(t *testing.T, retrier Retrier) {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
 	tries := 0
 	duration := common.TimeThis(func() {
-		err := retrier.Retry(func() (err error) {
+		err := retrier.Retry(ctx, func() (err error) {
 			defer func() {
 				tries++
 			}()

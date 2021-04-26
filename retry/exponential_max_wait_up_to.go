@@ -1,6 +1,7 @@
 package retry
 
 import (
+	"context"
 	"github.com/wojnosystems/go-retry/core"
 	"time"
 )
@@ -16,9 +17,9 @@ type ExponentialMaxWaitUpTo struct {
 	MaxWaitBetweenAttempts     time.Duration
 }
 
-func (c *ExponentialMaxWaitUpTo) Retry(cb core.CallbackFunc) (err error) {
+func (c *ExponentialMaxWaitUpTo) Retry(ctx context.Context, cb core.CallbackFunc) (err error) {
 	return core.LoopUpTo(cb, func(i uint64) {
 		sleepTime := exponentialSleepTime(c.InitialWaitBetweenAttempts, c.GrowthFactor, i)
-		time.Sleep(core.MinDuration(sleepTime, c.MaxWaitBetweenAttempts))
+		core.Sleep(ctx, core.MinDuration(sleepTime, c.MaxWaitBetweenAttempts))
 	}, uint64(c.MaxAttempts))
 }

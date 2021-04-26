@@ -1,6 +1,7 @@
 package retry
 
 import (
+	"context"
 	"github.com/wojnosystems/go-retry/core"
 )
 
@@ -9,6 +10,6 @@ import (
 type Skip struct {
 }
 
-func (s *Skip) Retry(_ core.CallbackFunc) (err error) {
+func (s *Skip) Retry(_ context.Context, _ core.CallbackFunc) (err error) {
 	return nil
 }

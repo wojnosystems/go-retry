@@ -1,7 +1,10 @@
 package retry
 
-import "github.com/wojnosystems/go-retry/core"
+import (
+	"context"
+	"github.com/wojnosystems/go-retry/core"
+)
 
 type Retrier interface {
-	Retry(cb core.CallbackFunc) (err error)
+	Retry(ctx context.Context, cb core.CallbackFunc) (err error)
 }

@@ -1,6 +1,7 @@
 package retry
 
 import (
+	"context"
 	"errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/wojnosystems/go-retry/retryAgain"
@@ -9,7 +10,7 @@ import (
 
 func TestSkip_Retry(t *testing.T) {
 	called := false
-	skipErr := (&Skip{}).Retry(func() (err error) {
+	skipErr := (&Skip{}).Retry(context.Background(), func() (err error) {
 		called = true
 		return retryAgain.Error(errors.New("fake"))
 	})

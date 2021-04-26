@@ -1,6 +1,7 @@
 package retry
 
 import (
+	"context"
 	"github.com/wojnosystems/go-retry/core"
 	"math"
 	"time"
@@ -14,10 +15,10 @@ type Exponential struct {
 	GrowthFactor               float64
 }
 
-func (c *Exponential) Retry(cb core.CallbackFunc) (err error) {
+func (c *Exponential) Retry(ctx context.Context, cb core.CallbackFunc) (err error) {
 	return core.LoopForever(cb, func(i uint64) {
 		sleepTime := exponentialSleepTime(c.InitialWaitBetweenAttempts, c.GrowthFactor, i)
-		time.Sleep(sleepTime)
+		core.Sleep(ctx, sleepTime)
 	})
 }
 

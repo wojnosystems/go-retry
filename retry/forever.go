@@ -1,6 +1,7 @@
 package retry
 
 import (
+	"context"
 	"github.com/wojnosystems/go-retry/core"
 	"time"
 )
@@ -10,8 +11,8 @@ type Forever struct {
 	WaitBetweenAttempts time.Duration
 }
 
-func (c *Forever) Retry(cb core.CallbackFunc) (err error) {
+func (c *Forever) Retry(ctx context.Context, cb core.CallbackFunc) (err error) {
 	return core.LoopForever(cb, func(_ uint64) {
-		time.Sleep(c.WaitBetweenAttempts)
+		core.Sleep(ctx, c.WaitBetweenAttempts)
 	})
 }

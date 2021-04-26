@@ -1,6 +1,7 @@
 package retry
 
 import (
+	"context"
 	"github.com/wojnosystems/go-retry/core"
 	"time"
 )
@@ -15,9 +16,9 @@ type LinearUpTo struct {
 	MaxAttempts                uint
 }
 
-func (c *LinearUpTo) Retry(cb core.CallbackFunc) (err error) {
+func (c *LinearUpTo) Retry(ctx context.Context, cb core.CallbackFunc) (err error) {
 	return core.LoopUpTo(cb, func(i uint64) {
 		sleepTime := linearSleepTime(c.InitialWaitBetweenAttempts, c.GrowthFactor, i)
-		time.Sleep(sleepTime)
+		core.Sleep(ctx, sleepTime)
 	}, uint64(c.MaxAttempts))
 }

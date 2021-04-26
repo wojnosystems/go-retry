@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/wojnosystems/go-retry/examples/common"
@@ -18,7 +19,7 @@ func main() {
 		_ = (&retry.UpTo{
 			WaitBetweenAttempts: 10 * time.Millisecond,
 			MaxAttempts:         10,
-		}).Retry(func() (err error) {
+		}).Retry(context.TODO(), func() (err error) {
 			fmt.Println(timer.SinceLast())
 			tries++
 			return retryAgain.Error(errors.New("simulated error"))

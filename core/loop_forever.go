@@ -6,7 +6,8 @@ import (
 	"math"
 )
 
-// LoopForever will call cb until it returns a non-retryable error or success
+// LoopForever will continuously call the callback (cb) until it succeeds or
+// returns a non-retryable error
 func LoopForever(cb CallbackFunc, wait DelayBetweenAttemptsFunc) (err error) {
 	i := uint64(0)
 	for {

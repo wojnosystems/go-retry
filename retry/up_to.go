@@ -1,6 +1,7 @@
 package retry
 
 import (
+	"context"
 	"github.com/wojnosystems/go-retry/core"
 	"time"
 )
@@ -14,8 +15,8 @@ type UpTo struct {
 	MaxAttempts uint
 }
 
-func (c *UpTo) Retry(cb core.CallbackFunc) (err error) {
+func (c *UpTo) Retry(ctx context.Context, cb core.CallbackFunc) (err error) {
 	return core.LoopUpTo(cb, func(i uint64) {
-		time.Sleep(c.WaitBetweenAttempts)
+		core.Sleep(ctx, c.WaitBetweenAttempts)
 	}, uint64(c.MaxAttempts))
 }

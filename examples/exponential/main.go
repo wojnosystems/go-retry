@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/wojnosystems/go-retry/examples/common"
@@ -19,7 +20,7 @@ func main() {
 		_ = (&retry.Exponential{
 			InitialWaitBetweenAttempts: 10 * time.Millisecond,
 			GrowthFactor:               1.0,
-		}).Retry(func() (err error) {
+		}).Retry(context.TODO(), func() (err error) {
 			fmt.Println(timer.SinceLast())
 			if tries < 8 {
 				tries++

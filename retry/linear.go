@@ -1,6 +1,7 @@
 package retry
 
 import (
+	"context"
 	"github.com/wojnosystems/go-retry/core"
 	"time"
 )
@@ -13,10 +14,10 @@ type Linear struct {
 	GrowthFactor               float64
 }
 
-func (c *Linear) Retry(cb core.CallbackFunc) (err error) {
+func (c *Linear) Retry(ctx context.Context, cb core.CallbackFunc) (err error) {
 	return core.LoopForever(cb, func(i uint64) {
 		sleepTime := linearSleepTime(c.InitialWaitBetweenAttempts, c.GrowthFactor, i)
-		time.Sleep(sleepTime)
+		core.Sleep(ctx, sleepTime)
 	})
 }
 
