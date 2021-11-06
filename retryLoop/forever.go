@@ -8,8 +8,8 @@ func forever(_ uint64) bool {
 	return true
 }
 
-// Forever will continuously call the callback (cb) until it succeeds or
+// Forever will continuously call the callback until it succeeds or
 // returns a non-retryable error
-func Forever(ctx context.Context, cb CallbackFunc, wait WaitBetweenAttemptsFunc) (err error) {
-	return Until(ctx, cb, wait, forever)
+func Forever(ctx context.Context, callback CallbackFunc, wait WaitBetweenAttemptsFunc) (err error) {
+	return Until(ctx, callback, wait, forever)
 }
