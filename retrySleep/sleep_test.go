@@ -1,11 +1,11 @@
-package core_test
+package retrySleep_test
 
 import (
 	"context"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/wojnosystems/go-retry/core"
-	"github.com/wojnosystems/go-retry/mocks"
+	"github.com/wojnosystems/go-retry/retryMocks"
+	"github.com/wojnosystems/go-retry/retrySleep"
 	"time"
 )
 
@@ -26,8 +26,8 @@ var _ = Describe("Sleep", func() {
 			cancel()
 		})
 		It("does not wait", func() {
-			elapsed := mocks.DurationElapsed(func() {
-				core.Sleep(ctx, aVeryLongTime)
+			elapsed := retryMocks.DurationElapsed(func() {
+				retrySleep.WithContext(ctx, aVeryLongTime)
 			})
 			Expect(elapsed).Should(BeNumerically("<", aShortTime))
 		})
@@ -44,8 +44,8 @@ var _ = Describe("Sleep", func() {
 			cancel()
 		})
 		It("does not wait", func() {
-			elapsed := mocks.DurationElapsed(func() {
-				core.Sleep(ctx, aVeryShortTime)
+			elapsed := retryMocks.DurationElapsed(func() {
+				retrySleep.WithContext(ctx, aVeryShortTime)
 			})
 			Expect(elapsed).Should(BeNumerically("~", aVeryShortTime, 1*time.Millisecond))
 		})

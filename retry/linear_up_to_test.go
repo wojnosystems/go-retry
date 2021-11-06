@@ -1,16 +1,13 @@
 package retry_test
 
 import (
-	. "github.com/onsi/ginkgo"
-	"github.com/wojnosystems/go-retry/retryError"
-	"time"
-)
-
-import (
 	"context"
+	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/wojnosystems/go-retry/mocks"
 	"github.com/wojnosystems/go-retry/retry"
+	"github.com/wojnosystems/go-retry/retryError"
+	"github.com/wojnosystems/go-retry/retryMocks"
+	"time"
 )
 
 var _ = Describe("LinearUpTo", func() {
@@ -27,16 +24,16 @@ var _ = Describe("LinearUpTo", func() {
 
 	When("multiple failures", func() {
 		var (
-			mock *mocks.Callback
+			mock *retryMocks.Callback
 		)
 		BeforeEach(func() {
-			mock = &mocks.Callback{Responses: []error{
-				mocks.ErrRetry, // 1 + (1*1*0) = 1, total 1
-				mocks.ErrRetry, // 1 + (1*1*1) = 2, total 3
-				mocks.ErrRetry, // 1 + (1*1*2) = 3, total 6
-				mocks.ErrRetry, // 1 + (1*1*3) = 4, total 10
-				mocks.ErrRetry, // 1 + (1*1*4) = 5, total 15
-				mocks.ErrRetry, // 1 + (1*1*5) = 6, total 21
+			mock = &retryMocks.Callback{Responses: []error{
+				retryMocks.ErrRetry, // 1 + (1*1*0) = 1, total 1
+				retryMocks.ErrRetry, // 1 + (1*1*1) = 2, total 3
+				retryMocks.ErrRetry, // 1 + (1*1*2) = 3, total 6
+				retryMocks.ErrRetry, // 1 + (1*1*3) = 4, total 10
+				retryMocks.ErrRetry, // 1 + (1*1*4) = 5, total 15
+				retryMocks.ErrRetry, // 1 + (1*1*5) = 6, total 21
 				retryError.StopSuccess,
 			}}
 		})
@@ -48,8 +45,8 @@ var _ = Describe("LinearUpTo", func() {
 				subject = retry.NewLinearUpTo(1*timeUnit, 1.0, 10)
 			})
 			It("takes the appropriate amount of time", func() {
-				elapsed := mocks.DurationElapsed(func() {
-					_ = subject.Retry(ctx, mock.Next())
+				elapsed := retryMocks.DurationElapsed(func() {
+					_ = subject.Retry(ctx, mock.Generator())
 				})
 				Expect(elapsed).Should(BeNumerically(">", 21*timeUnit))
 				Expect(elapsed).Should(BeNumerically("<", 31*timeUnit))
@@ -63,8 +60,8 @@ var _ = Describe("LinearUpTo", func() {
 				subject = retry.NewLinearUpTo(1*timeUnit, 1.0, 4)
 			})
 			It("takes the appropriate amount of time", func() {
-				elapsed := mocks.DurationElapsed(func() {
-					_ = subject.Retry(ctx, mock.Next())
+				elapsed := retryMocks.DurationElapsed(func() {
+					_ = subject.Retry(ctx, mock.Generator())
 				})
 				Expect(elapsed).Should(BeNumerically(">", 6*timeUnit))
 				Expect(elapsed).Should(BeNumerically("<", 12*timeUnit))

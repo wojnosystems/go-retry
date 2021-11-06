@@ -12,7 +12,7 @@ func TestAgain_Err(t *testing.T) {
 	g := NewWithT(t)
 	err := Again(errFake)
 	g.Expect(err).Should(HaveOccurred())
-	g.Expect(err.Err()).Should(Equal(errFake))
+	g.Expect(err.Unwrap()).Should(Equal(errFake))
 }
 
 func TestAgain_Error(t *testing.T) {
@@ -22,7 +22,27 @@ func TestAgain_Error(t *testing.T) {
 }
 
 func TestAgain_IsAgain(t *testing.T) {
-	g := NewWithT(t)
-	err := Again(errFake)
-	g.Expect(IsAgain(err)).Should(BeTrue())
+	cases := map[string]struct {
+		input    error
+		expected bool
+	}{
+		"nil": {
+			input: nil,
+		},
+		"retryable": {
+			input:    Again(errFake),
+			expected: true,
+		},
+		"not retryable": {
+			input: errFake,
+		},
+	}
+
+	for caseName, c := range cases {
+		t.Run(caseName, func(t *testing.T) {
+			g := NewWithT(t)
+			actual := IsAgain(c.input)
+			g.Expect(actual).Should(Equal(c.expected))
+		})
+	}
 }

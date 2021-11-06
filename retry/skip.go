@@ -2,8 +2,8 @@ package retry
 
 import (
 	"context"
-	"github.com/wojnosystems/go-retry/core"
 	"github.com/wojnosystems/go-retry/retryError"
+	"github.com/wojnosystems/go-retry/retryLoop"
 )
 
 var Skip = &skip{}
@@ -13,6 +13,6 @@ var Skip = &skip{}
 type skip struct {
 }
 
-func (s *skip) Retry(_ context.Context, _ core.CallbackFunc) (err error) {
+func (s *skip) Retry(_ context.Context, _ retryLoop.CallbackFunc) (err error) {
 	return retryError.StopSuccess
 }

@@ -1,16 +1,16 @@
-package core_test
+package retryLoop_test
 
 import (
 	"context"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/wojnosystems/go-retry/core"
-	"github.com/wojnosystems/go-retry/mocks"
 	"github.com/wojnosystems/go-retry/retryError"
+	"github.com/wojnosystems/go-retry/retryLoop"
+	"github.com/wojnosystems/go-retry/retryMocks"
 	"time"
 )
 
-var _ = Describe("LoopForever", func() {
+var _ = Describe("Forever", func() {
 	var (
 		ctx    context.Context
 		cancel context.CancelFunc
@@ -23,23 +23,23 @@ var _ = Describe("LoopForever", func() {
 	})
 	When("multiple retries", func() {
 		var (
-			mock *mocks.Callback
+			mock *retryMocks.Callback
 		)
 		BeforeEach(func() {
-			mock = &mocks.Callback{
+			mock = &retryMocks.Callback{
 				Responses: []error{
-					mocks.ErrRetry,
-					mocks.ErrRetry,
-					mocks.ErrRetry,
-					mocks.ErrRetry,
-					mocks.ErrRetry,
-					mocks.ErrRetry,
+					retryMocks.ErrRetry,
+					retryMocks.ErrRetry,
+					retryMocks.ErrRetry,
+					retryMocks.ErrRetry,
+					retryMocks.ErrRetry,
+					retryMocks.ErrRetry,
 					retryError.StopSuccess,
 				},
 			}
 		})
 		It("does not exhaust retries", func() {
-			err := core.LoopForever(ctx, mock.Next(), mocks.NeverWaits)
+			err := retryLoop.Forever(ctx, mock.Generator(), retryMocks.NeverWaits)
 			Expect(err).Should(BeNil())
 			Expect(mock.TimesRun()).Should(Equal(7))
 		})

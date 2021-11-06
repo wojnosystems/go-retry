@@ -1,4 +1,4 @@
-package core_test
+package retrySleep_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestCore(t *testing.T) {
+func TestRetrySleep(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Core Suite")
+	RunSpecs(t, "RetrySleep Suite")
 }

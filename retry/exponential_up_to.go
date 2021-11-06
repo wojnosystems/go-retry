@@ -2,7 +2,8 @@ package retry
 
 import (
 	"context"
-	"github.com/wojnosystems/go-retry/core"
+	"github.com/wojnosystems/go-retry/retryLoop"
+	"github.com/wojnosystems/go-retry/retrySleep"
 	"time"
 )
 
@@ -28,9 +29,9 @@ func NewExponentialUpTo(
 	}
 }
 
-func (c *ExponentialUpTo) Retry(ctx context.Context, cb core.CallbackFunc) (err error) {
-	return core.LoopUpTo(ctx, cb, func(i uint64) {
+func (c *ExponentialUpTo) Retry(ctx context.Context, cb retryLoop.CallbackFunc) (err error) {
+	return retryLoop.UpTo(ctx, cb, func(i uint64) {
 		sleepTime := exponentialSleepTime(c.InitialWaitBetweenAttempts, c.GrowthFactor, i)
-		core.Sleep(ctx, sleepTime)
+		retrySleep.WithContext(ctx, sleepTime)
 	}, uint64(c.MaxAttempts))
 }

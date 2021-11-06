@@ -23,7 +23,7 @@ func main() {
 				tries++
 				return retryError.Again(errors.New("simulated error"))
 			}
-			return retryError.StopSuccess
+			return nil
 		})
 	})
 	fmt.Println("tried", tries, "times taking", duration)

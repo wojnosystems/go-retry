@@ -4,9 +4,9 @@ import (
 	"context"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/wojnosystems/go-retry/mocks"
 	"github.com/wojnosystems/go-retry/retry"
 	"github.com/wojnosystems/go-retry/retryError"
+	"github.com/wojnosystems/go-retry/retryMocks"
 	"time"
 )
 
@@ -29,21 +29,21 @@ var _ = Describe("LinearRetry", func() {
 	When("multiple failures", func() {
 		var (
 			subject retry.Retrier
-			mock    *mocks.Callback
+			mock    *retryMocks.Callback
 		)
 		BeforeEach(func() {
-			mock = &mocks.Callback{Responses: []error{
-				mocks.ErrRetry,
-				mocks.ErrRetry,
-				mocks.ErrRetry,
-				mocks.ErrRetry,
+			mock = &retryMocks.Callback{Responses: []error{
+				retryMocks.ErrRetry,
+				retryMocks.ErrRetry,
+				retryMocks.ErrRetry,
+				retryMocks.ErrRetry,
 				retryError.StopSuccess,
 			}}
 			subject = retry.NewLinear(1*timeUnit, 1.0)
 		})
 		It("takes the appropriate amount of time", func() {
-			elapsed := mocks.DurationElapsed(func() {
-				_ = subject.Retry(ctx, mock.Next())
+			elapsed := retryMocks.DurationElapsed(func() {
+				_ = subject.Retry(ctx, mock.Generator())
 			})
 			Expect(elapsed).Should(BeNumerically(">", 4*timeUnit))
 			Expect(elapsed).Should(BeNumerically("<", 14*timeUnit))

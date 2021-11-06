@@ -2,7 +2,8 @@ package retry
 
 import (
 	"context"
-	"github.com/wojnosystems/go-retry/core"
+	"github.com/wojnosystems/go-retry/retryLoop"
+	"github.com/wojnosystems/go-retry/retrySleep"
 	"time"
 )
 
@@ -21,9 +22,9 @@ func NewLinear(initialWaitBetweenAttempts time.Duration, growthFactor float64) *
 	}
 }
 
-func (c *Linear) Retry(ctx context.Context, cb core.CallbackFunc) (err error) {
-	return core.LoopForever(ctx, cb, func(i uint64) {
+func (c *Linear) Retry(ctx context.Context, cb retryLoop.CallbackFunc) (err error) {
+	return retryLoop.Forever(ctx, cb, func(i uint64) {
 		sleepTime := linearSleepTime(c.InitialWaitBetweenAttempts, c.GrowthFactor, i)
-		core.Sleep(ctx, sleepTime)
+		retrySleep.WithContext(ctx, sleepTime)
 	})
 }

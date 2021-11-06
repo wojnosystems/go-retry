@@ -1,12 +1,12 @@
-package core_test
+package retryLoop_test
 
 import (
 	"context"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/wojnosystems/go-retry/core"
-	"github.com/wojnosystems/go-retry/mocks"
 	"github.com/wojnosystems/go-retry/retryError"
+	"github.com/wojnosystems/go-retry/retryLoop"
+	"github.com/wojnosystems/go-retry/retryMocks"
 	"time"
 )
 
@@ -18,7 +18,7 @@ func loopNever(_ uint64) bool {
 	return false
 }
 
-var _ = Describe("LoopUntil", func() {
+var _ = Describe("Until", func() {
 
 	When("context not expired", func() {
 		var (
@@ -33,72 +33,72 @@ var _ = Describe("LoopUntil", func() {
 		})
 		When("the first one succeeds", func() {
 			var (
-				mock *mocks.Callback
+				mock *retryMocks.Callback
 			)
 			BeforeEach(func() {
-				mock = &mocks.Callback{
+				mock = &retryMocks.Callback{
 					Responses: []error{
 						retryError.StopSuccess,
 					},
 				}
 			})
 			It("succeeds", func() {
-				err := core.LoopUntil(ctx, mock.Next(), mocks.NeverWaits, loopForever)
+				err := retryLoop.Until(ctx, mock.Generator(), retryMocks.NeverWaits, loopForever)
 				Expect(err).Should(BeNil())
 				Expect(mock.TimesRun()).Should(Equal(1))
 			})
 		})
 		When("retries once", func() {
 			var (
-				mock *mocks.Callback
+				mock *retryMocks.Callback
 			)
 			BeforeEach(func() {
-				mock = &mocks.Callback{
+				mock = &retryMocks.Callback{
 					Responses: []error{
-						mocks.ErrRetry,
+						retryMocks.ErrRetry,
 						retryError.StopSuccess,
 					},
 				}
 			})
 			It("succeeds", func() {
-				err := core.LoopUntil(ctx, mock.Next(), mocks.NeverWaits, loopForever)
+				err := retryLoop.Until(ctx, mock.Generator(), retryMocks.NeverWaits, loopForever)
 				Expect(err).Should(BeNil())
 				Expect(mock.TimesRun()).Should(Equal(2))
 			})
 		})
 		When("unrecoverable error", func() {
 			var (
-				mock *mocks.Callback
+				mock *retryMocks.Callback
 			)
 			BeforeEach(func() {
-				mock = &mocks.Callback{
+				mock = &retryMocks.Callback{
 					Responses: []error{
-						mocks.ErrRetry,
-						mocks.ErrThatCannotBeRetried,
+						retryMocks.ErrRetry,
+						retryMocks.ErrThatCannotBeRetried,
 					},
 				}
 			})
 			It("fails", func() {
-				err := core.LoopUntil(ctx, mock.Next(), mocks.NeverWaits, loopForever)
-				Expect(err).Should(Equal(mocks.ErrThatCannotBeRetried))
+				err := retryLoop.Until(ctx, mock.Generator(), retryMocks.NeverWaits, loopForever)
+				Expect(err).Should(Equal(retryMocks.ErrThatCannotBeRetried))
 				Expect(mock.TimesRun()).Should(Equal(2))
 			})
 		})
 		When("retries exceeded", func() {
 			var (
-				mock *mocks.Callback
+				mock *retryMocks.Callback
 			)
 			BeforeEach(func() {
-				mock = &mocks.Callback{
+				mock = &retryMocks.Callback{
 					Responses: []error{
-						mocks.ErrRetry,
-						mocks.ErrThatCannotBeRetried,
+						retryMocks.ErrRetry,
+						retryMocks.ErrThatCannotBeRetried,
 					},
 				}
 			})
 			It("returns the last retry error", func() {
-				err := core.LoopUntil(ctx, mock.Next(), mocks.NeverWaits, loopNever)
-				Expect(err).Should(Equal(mocks.ErrRetryReason))
+				err := retryLoop.Until(ctx, mock.Generator(), retryMocks.NeverWaits, loopNever)
+				Expect(err).Should(Equal(retryMocks.ErrRetryReason))
 				Expect(mock.TimesRun()).Should(Equal(1))
 			})
 		})
@@ -106,22 +106,22 @@ var _ = Describe("LoopUntil", func() {
 	When("context expired", func() {
 		var (
 			ctx  context.Context
-			mock *mocks.Callback
+			mock *retryMocks.Callback
 		)
 		BeforeEach(func() {
 			var cancel context.CancelFunc
 			ctx, cancel = context.WithCancel(context.Background())
 			cancel()
 
-			mock = &mocks.Callback{
+			mock = &retryMocks.Callback{
 				Responses: []error{
-					mocks.ErrRetry,
-					mocks.ErrThatCannotBeRetried,
+					retryMocks.ErrRetry,
+					retryMocks.ErrThatCannotBeRetried,
 				},
 			}
 		})
 		It("fails without attempting", func() {
-			err := core.LoopUntil(ctx, mock.Next(), mocks.NeverWaits, loopForever)
+			err := retryLoop.Until(ctx, mock.Generator(), retryMocks.NeverWaits, loopForever)
 			Expect(err).Should(Equal(context.Canceled))
 			Expect(mock.TimesRun()).Should(Equal(0))
 		})

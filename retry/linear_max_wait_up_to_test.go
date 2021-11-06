@@ -4,9 +4,9 @@ import (
 	"context"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/wojnosystems/go-retry/mocks"
 	"github.com/wojnosystems/go-retry/retry"
 	"github.com/wojnosystems/go-retry/retryError"
+	"github.com/wojnosystems/go-retry/retryMocks"
 	"time"
 )
 
@@ -24,19 +24,19 @@ var _ = Describe("LinearRetry", func() {
 
 	When("multiple failures", func() {
 		var (
-			mock *mocks.Callback
+			mock *retryMocks.Callback
 		)
 		BeforeEach(func() {
-			mock = &mocks.Callback{Responses: []error{
-				mocks.ErrRetry, // 1 + (1*1*0) = 1, total 1
-				mocks.ErrRetry, // 1 + (1*1*1) = 2, total 3
-				mocks.ErrRetry, // 1 + (1*1*2) = 3, total 6
-				mocks.ErrRetry, // 1 + (1*1*3) = 4, total 10
-				mocks.ErrRetry, // 1 + (1*1*4) = 5, total 15
-				mocks.ErrRetry, // 1 + (1*1*5) = 6 (5), total 21 (20) (5 is max wait time)
-				mocks.ErrRetry, // 1 + (1*1*6) = 7 (5), total 28 (25)
-				mocks.ErrRetry, // 1 + (1*1*6) = 8 (5), total 36 (30)
-				mocks.ErrRetry, // 1 + (1*1*6) = 9 (5), total 45 (35)
+			mock = &retryMocks.Callback{Responses: []error{
+				retryMocks.ErrRetry, // 1 + (1*1*0) = 1, total 1
+				retryMocks.ErrRetry, // 1 + (1*1*1) = 2, total 3
+				retryMocks.ErrRetry, // 1 + (1*1*2) = 3, total 6
+				retryMocks.ErrRetry, // 1 + (1*1*3) = 4, total 10
+				retryMocks.ErrRetry, // 1 + (1*1*4) = 5, total 15
+				retryMocks.ErrRetry, // 1 + (1*1*5) = 6 (5), total 21 (20) (5 is max wait time)
+				retryMocks.ErrRetry, // 1 + (1*1*6) = 7 (5), total 28 (25)
+				retryMocks.ErrRetry, // 1 + (1*1*6) = 8 (5), total 36 (30)
+				retryMocks.ErrRetry, // 1 + (1*1*6) = 9 (5), total 45 (35)
 				retryError.StopSuccess,
 			}}
 		})
@@ -48,8 +48,8 @@ var _ = Describe("LinearRetry", func() {
 				subject = retry.NewLinearMaxWaitUpTo(1*timeUnit, 1.0, 10, 5*timeUnit)
 			})
 			It("takes the appropriate amount of time", func() {
-				elapsed := mocks.DurationElapsed(func() {
-					_ = subject.Retry(ctx, mock.Next())
+				elapsed := retryMocks.DurationElapsed(func() {
+					_ = subject.Retry(ctx, mock.Generator())
 				})
 				Expect(elapsed).Should(BeNumerically(">", 35*timeUnit))
 				Expect(elapsed).Should(BeNumerically("<", 45*timeUnit))
@@ -63,8 +63,8 @@ var _ = Describe("LinearRetry", func() {
 				subject = retry.NewLinearMaxWaitUpTo(1*timeUnit, 1.0, 4, 5*timeUnit)
 			})
 			It("takes the appropriate amount of time", func() {
-				elapsed := mocks.DurationElapsed(func() {
-					_ = subject.Retry(ctx, mock.Next())
+				elapsed := retryMocks.DurationElapsed(func() {
+					_ = subject.Retry(ctx, mock.Generator())
 				})
 				Expect(elapsed).Should(BeNumerically(">", 6*timeUnit))
 				Expect(elapsed).Should(BeNumerically("<", 16*timeUnit))
