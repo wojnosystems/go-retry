@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/wojnosystems/go-retry/mocks"
 	"github.com/wojnosystems/go-retry/retry"
-	"github.com/wojnosystems/go-retry/retryStop"
+	"github.com/wojnosystems/go-retry/retryError"
 	"time"
 )
 
@@ -35,19 +35,19 @@ var _ = Describe("ExponentialMaxWaitUpTo", func() {
 				mocks.ErrRetry, // wait 1 * (2)^4 = 16, total 31
 				mocks.ErrRetry, // wait 1 * (2)^5 = 32 (cap 20), total 69 (51)
 				mocks.ErrRetry, // wait 1 * (2)^6 = 64 (cap 20), total 134 (71)
-				retryStop.Success,
+				retryError.StopSuccess,
 			}}
 		})
 		When("max attempts reached", func() {
 			var (
-				retrier retry.Retrier
+				subject retry.Retrier
 			)
 			BeforeEach(func() {
-				retrier = retry.NewExponentialMaxWaitUpTo(1*timeUnit, 1.0, 5, 100*timeUnit)
+				subject = retry.NewExponentialMaxWaitUpTo(1*timeUnit, 1.0, 5, 100*timeUnit)
 			})
 			It("takes the appropriate amount of time", func() {
 				elapsed := mocks.DurationElapsed(func() {
-					_ = retrier.Retry(ctx, mock.Next())
+					_ = subject.Retry(ctx, mock.Next())
 				})
 				Expect(elapsed).Should(BeNumerically(">", 15*timeUnit))
 				Expect(elapsed).Should(BeNumerically("<", 25*timeUnit))
@@ -55,14 +55,14 @@ var _ = Describe("ExponentialMaxWaitUpTo", func() {
 		})
 		When("max wait time reached", func() {
 			var (
-				retrier retry.Retrier
+				subject retry.Retrier
 			)
 			BeforeEach(func() {
-				retrier = retry.NewExponentialMaxWaitUpTo(1*timeUnit, 1.0, 10, 20*timeUnit)
+				subject = retry.NewExponentialMaxWaitUpTo(1*timeUnit, 1.0, 10, 20*timeUnit)
 			})
 			It("takes the appropriate amount of time", func() {
 				elapsed := mocks.DurationElapsed(func() {
-					_ = retrier.Retry(ctx, mock.Next())
+					_ = subject.Retry(ctx, mock.Next())
 				})
 				Expect(elapsed).Should(BeNumerically(">", 71*timeUnit))
 				Expect(elapsed).Should(BeNumerically("<", 81*timeUnit))

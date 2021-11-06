@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/wojnosystems/go-retry/retry"
-	"github.com/wojnosystems/go-retry/retryStop"
+	"github.com/wojnosystems/go-retry/retryError"
 )
 
 var _ = Describe("Skip", func() {
@@ -13,7 +13,7 @@ var _ = Describe("Skip", func() {
 		wasCalled := false
 		err := retry.Skip.Retry(context.Background(), func() (err error) {
 			wasCalled = true
-			return retryStop.Success
+			return retryError.StopSuccess
 		})
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(wasCalled).Should(BeFalse())

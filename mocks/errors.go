@@ -2,11 +2,11 @@ package mocks
 
 import (
 	"errors"
-	"github.com/wojnosystems/go-retry/retryAgain"
+	"github.com/wojnosystems/go-retry/retryError"
 )
 
 var (
 	ErrRetryReason         = errors.New("forced retry")
-	ErrRetry               = retryAgain.Error(ErrRetryReason)
+	ErrRetry               = retryError.Again(ErrRetryReason)
 	ErrThatCannotBeRetried = errors.New("un-retryable error")
 )

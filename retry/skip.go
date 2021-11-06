@@ -3,7 +3,7 @@ package retry
 import (
 	"context"
 	"github.com/wojnosystems/go-retry/core"
-	"github.com/wojnosystems/go-retry/retryStop"
+	"github.com/wojnosystems/go-retry/retryError"
 )
 
 var Skip = &skip{}
@@ -14,5 +14,5 @@ type skip struct {
 }
 
 func (s *skip) Retry(_ context.Context, _ core.CallbackFunc) (err error) {
-	return retryStop.Success
+	return retryError.StopSuccess
 }

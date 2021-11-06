@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/wojnosystems/go-retry/core"
 	"github.com/wojnosystems/go-retry/mocks"
-	"github.com/wojnosystems/go-retry/retryStop"
+	"github.com/wojnosystems/go-retry/retryError"
 	"time"
 )
 
@@ -38,7 +38,7 @@ var _ = Describe("LoopUntil", func() {
 			BeforeEach(func() {
 				mock = &mocks.Callback{
 					Responses: []error{
-						retryStop.Success,
+						retryError.StopSuccess,
 					},
 				}
 			})
@@ -56,7 +56,7 @@ var _ = Describe("LoopUntil", func() {
 				mock = &mocks.Callback{
 					Responses: []error{
 						mocks.ErrRetry,
-						retryStop.Success,
+						retryError.StopSuccess,
 					},
 				}
 			})

@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/wojnosystems/go-retry/mocks"
 	"github.com/wojnosystems/go-retry/retry"
-	"github.com/wojnosystems/go-retry/retryStop"
+	"github.com/wojnosystems/go-retry/retryError"
 	"time"
 )
 
@@ -37,19 +37,19 @@ var _ = Describe("LinearRetry", func() {
 				mocks.ErrRetry, // 1 + (1*1*6) = 7 (5), total 28 (25)
 				mocks.ErrRetry, // 1 + (1*1*6) = 8 (5), total 36 (30)
 				mocks.ErrRetry, // 1 + (1*1*6) = 9 (5), total 45 (35)
-				retryStop.Success,
+				retryError.StopSuccess,
 			}}
 		})
 		When("under retry limit", func() {
 			var (
-				retrier retry.Retrier
+				subject retry.Retrier
 			)
 			BeforeEach(func() {
-				retrier = retry.NewLinearMaxWaitUpTo(1*timeUnit, 1.0, 10, 5*timeUnit)
+				subject = retry.NewLinearMaxWaitUpTo(1*timeUnit, 1.0, 10, 5*timeUnit)
 			})
 			It("takes the appropriate amount of time", func() {
 				elapsed := mocks.DurationElapsed(func() {
-					_ = retrier.Retry(ctx, mock.Next())
+					_ = subject.Retry(ctx, mock.Next())
 				})
 				Expect(elapsed).Should(BeNumerically(">", 35*timeUnit))
 				Expect(elapsed).Should(BeNumerically("<", 45*timeUnit))
@@ -57,14 +57,14 @@ var _ = Describe("LinearRetry", func() {
 		})
 		When("over retry limit", func() {
 			var (
-				retrier retry.Retrier
+				subject retry.Retrier
 			)
 			BeforeEach(func() {
-				retrier = retry.NewLinearMaxWaitUpTo(1*timeUnit, 1.0, 4, 5*timeUnit)
+				subject = retry.NewLinearMaxWaitUpTo(1*timeUnit, 1.0, 4, 5*timeUnit)
 			})
 			It("takes the appropriate amount of time", func() {
 				elapsed := mocks.DurationElapsed(func() {
-					_ = retrier.Retry(ctx, mock.Next())
+					_ = subject.Retry(ctx, mock.Next())
 				})
 				Expect(elapsed).Should(BeNumerically(">", 6*timeUnit))
 				Expect(elapsed).Should(BeNumerically("<", 16*timeUnit))

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/wojnosystems/go-retry/retry"
-	"github.com/wojnosystems/go-retry/retryAgain"
+	"github.com/wojnosystems/go-retry/retryError"
 	"time"
 )
 
@@ -21,19 +21,19 @@ func main() {
 
 	_ = strategy.Retry(context.TODO(), func() (err error) {
 		fmt.Println("normal")
-		return retryAgain.Error(errors.New("some error"))
+		return retryError.Again(errors.New("some error"))
 	})
 
 	strategy = retry.Never
 
 	_ = strategy.Retry(context.TODO(), func() (err error) {
 		fmt.Println("NEVER")
-		return retryAgain.Error(errors.New("some error"))
+		return retryError.Again(errors.New("some error"))
 	})
 
 	strategy = normal
 	_ = strategy.Retry(context.TODO(), func() (err error) {
 		fmt.Println("normal")
-		return retryAgain.Error(errors.New("some error"))
+		return retryError.Again(errors.New("some error"))
 	})
 }

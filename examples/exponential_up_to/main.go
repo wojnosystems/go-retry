@@ -6,26 +6,24 @@ import (
 	"fmt"
 	"github.com/wojnosystems/go-retry/examples/common"
 	"github.com/wojnosystems/go-retry/retry"
-	"github.com/wojnosystems/go-retry/retryAgain"
+	"github.com/wojnosystems/go-retry/retryError"
 	"time"
 )
 
 func main() {
 	tries := 0
 	duration := common.TimeThis(func() {
-
 		timer := common.NewTimeSet()
 
-		_ = (&retry.ExponentialUpTo{
-			InitialWaitBetweenAttempts: 10 * time.Millisecond,
-			GrowthFactor:               1.0,
-			MaxAttempts:                10,
-		}).Retry(context.TODO(), func() (err error) {
+		_ = retry.NewExponentialUpTo(
+			10*time.Millisecond,
+			1.0,
+			10,
+		).Retry(context.TODO(), func() (err error) {
 			fmt.Println(timer.SinceLast())
 			tries++
-			return retryAgain.Error(errors.New("simulated error"))
+			return retryError.Again(errors.New("simulated error"))
 		})
-
 	})
 	fmt.Println("tried", tries, "times taking", duration)
 }

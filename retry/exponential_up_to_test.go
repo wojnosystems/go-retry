@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/wojnosystems/go-retry/mocks"
 	"github.com/wojnosystems/go-retry/retry"
-	"github.com/wojnosystems/go-retry/retryStop"
+	"github.com/wojnosystems/go-retry/retryError"
 	"time"
 )
 
@@ -35,19 +35,19 @@ var _ = Describe("ExponentialUpTo", func() {
 				mocks.ErrRetry, // wait 1 * (2)^4 = 16, total 31
 				mocks.ErrRetry, // wait 1 * (2)^5 = 32, total 63
 				mocks.ErrRetry, // wait 1 * (2)^6 = 64, total 127
-				retryStop.Success,
+				retryError.StopSuccess,
 			}}
 		})
 		When("max attempts reached", func() {
 			var (
-				retrier retry.Retrier
+				subject retry.Retrier
 			)
 			BeforeEach(func() {
-				retrier = retry.NewExponentialUpTo(1*timeUnit, 1.0, 6)
+				subject = retry.NewExponentialUpTo(1*timeUnit, 1.0, 6)
 			})
 			It("takes the appropriate amount of time", func() {
 				elapsed := mocks.DurationElapsed(func() {
-					_ = retrier.Retry(ctx, mock.Next())
+					_ = subject.Retry(ctx, mock.Next())
 				})
 				Expect(elapsed).Should(BeNumerically(">", 31*timeUnit))
 				Expect(elapsed).Should(BeNumerically("<", 41*timeUnit))

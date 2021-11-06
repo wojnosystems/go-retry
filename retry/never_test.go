@@ -6,8 +6,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/wojnosystems/go-retry/retry"
-	"github.com/wojnosystems/go-retry/retryAgain"
-	"github.com/wojnosystems/go-retry/retryStop"
+	"github.com/wojnosystems/go-retry/retryError"
 )
 
 var _ = Describe("Never", func() {
@@ -16,7 +15,7 @@ var _ = Describe("Never", func() {
 			wasCalled := false
 			err := retry.Never.Retry(context.Background(), func() (err error) {
 				wasCalled = true
-				return retryStop.Success
+				return retryError.StopSuccess
 			})
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(wasCalled).Should(BeTrue())
@@ -28,7 +27,7 @@ var _ = Describe("Never", func() {
 			wasCalled := false
 			err := retry.Never.Retry(context.Background(), func() (err error) {
 				wasCalled = true
-				return retryAgain.Error(expectedErr)
+				return retryError.Again(expectedErr)
 			})
 			Expect(err).Should(HaveOccurred())
 			Expect(wasCalled).Should(BeTrue())

@@ -30,84 +30,6 @@ You can return 3 types of errors:
 
 # Examples
 
-## Network I/O
-
-Here's an example of how you can use this to connect with an HTTP request and retry on failure. This example shows you how to use an exponential back-off and what happens when your service fails permanently.
-
-```go
-package main
-
-import (
-	"context"
-	"errors"
-	"fmt"
-	"github.com/wojnosystems/go-retry/examples/common"
-	"github.com/wojnosystems/go-retry/retry"
-	"github.com/wojnosystems/go-retry/retryAgain"
-	"net/http"
-	"time"
-)
-
-func main() {
-	ctx, cancel := context.WithTimeout(context.Background(), 2 * time.Second)
-	defer cancel()
-
-	dialer := &retry.ExponentialMaxWaitUpTo{
-		InitialWaitBetweenAttempts: 50 * time.Millisecond,
-		GrowthFactor:               1.0,
-		MaxAttempts:                15,
-		MaxWaitBetweenAttempts:     500 * time.Millisecond,
-	}
-
-	timer := common.NewTimeSet()
-
-	totalTime := common.TimeThis(func() {
-		err := dialer.Retry(ctx, func() error {
-			fmt.Println("getting", timer.SinceLast())
-			req, _ := http.NewRequest(http.MethodGet, "http://localhost:8080/non-existent", nil)
-			req = req.WithContext(ctx)
-			_, getErr := http.DefaultClient.Do(req)
-			if getErr != nil {
-				getErr = errors.Unwrap(getErr)
-				if getErr != context.DeadlineExceeded {
-					getErr = retryAgain.Error(getErr)
-				}
-				return getErr
-			}
-			return nil
-		})
-
-		// Outputs the http error because we ran out of retries
-		fmt.Println(err)
-	})
-
-	fmt.Println("total time", totalTime)
-}
-```
-
-common.TimeThis and common.NewTimeSet are helper methods that record time differences. They're not involved in the retry logic and only serve to help you understand how attempts and delays between attempts work.
-
-The context controls how long the retry will wait as well. If the last request failed and the library would have slept, the sleep should not sleep much longer than the context deadline. It will not, of course, be perfect. However, it should help prevent the retry library from sleeping for an unreasonably long time after your context expires.
-
-### Outputs
-
-```
-getting 573ns
-getting 50.650745ms
-getting 100.387843ms
-getting 200.851694ms
-getting 400.830581ms
-getting 500.871094ms
-getting 500.916346ms
-getting 245.670663ms
-context deadline exceeded
-total time 2.000234103s
-```
-
-Because I have no service running on port 9999 on my localhost, this emulates a network timeout. You can see that this retries 10 times, exponentially backing off until it reaches 500ms, at which point it caps out and will not exceed the MaxWaitBetweenAttempts.
-
-As you can see, after the context deadline of 2 seconds is exceeded, a 500ms sleep is interrupted and reduced to 245.66ms. The retrier then continues to attempt to execute the code again. Since Request is context-aware, the http.Client will not execute the request. We catch the DeadlineExceeded error and return it immediately to prevent the retry library from executing again.
-
 ## Retry With Cap
 
 Retries something up to MaxAttempts times, waiting the same amount of time between each request
@@ -127,19 +49,17 @@ import (
 
 func main() {
 	tries := 0
+	timer := common.NewTimeSet()
 	duration := common.TimeThis(func() {
 
-		timer := common.NewTimeSet()
-
-		_ = (&retry.UpTo{
-			WaitBetweenAttempts: 10 * time.Millisecond,
-			MaxAttempts:         10,
-		}).Retry(context.TODO(), func() (err error) {
+		_ = retry.NewUpTo(
+			10 * time.Millisecond,
+			10,
+		).Retry(context.TODO(), func() (err error) {
 			fmt.Println(timer.SinceLast())
 			tries++
 			return retryAgain.Error(errors.New("simulated error"))
 		})
-
 	})
 	fmt.Println("tried", tries, "times taking", duration)
 }
@@ -333,3 +253,81 @@ normal
 normal
 normal
 ```
+
+## Network I/O: Exponential Back off with a maximum wait cliff
+
+Here's an example of how you can use this to connect with an HTTP request and retry on failure. This example shows you how to use an exponential back-off and what happens when your service fails permanently.
+
+```go
+package main
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"github.com/wojnosystems/go-retry/examples/common"
+	"github.com/wojnosystems/go-retry/retry"
+	"github.com/wojnosystems/go-retry/retryAgain"
+	"net/http"
+	"time"
+)
+
+func main() {
+	ctx, cancel := context.WithTimeout(context.Background(), 2 * time.Second)
+	defer cancel()
+
+	dialer := &retry.ExponentialMaxWaitUpTo{
+		InitialWaitBetweenAttempts: 50 * time.Millisecond,
+		GrowthFactor:               1.0,
+		MaxAttempts:                15,
+		MaxWaitBetweenAttempts:     500 * time.Millisecond,
+	}
+
+	timer := common.NewTimeSet()
+
+	totalTime := common.TimeThis(func() {
+		err := dialer.Retry(ctx, func() error {
+			fmt.Println("getting", timer.SinceLast())
+			req, _ := http.NewRequest(http.MethodGet, "http://localhost:8080/non-existent", nil)
+			req = req.WithContext(ctx)
+			_, getErr := http.DefaultClient.Do(req)
+			if getErr != nil {
+				getErr = errors.Unwrap(getErr)
+				if getErr != context.DeadlineExceeded {
+					getErr = retryAgain.Error(getErr)
+				}
+				return getErr
+			}
+			return nil
+		})
+
+		// Outputs the http error because we ran out of retries
+		fmt.Println(err)
+	})
+
+	fmt.Println("total time", totalTime)
+}
+```
+
+common.TimeThis and common.NewTimeSet are helper methods that record time differences. They're not involved in the retry logic and only serve to help you understand how attempts and delays between attempts work.
+
+The context controls how long the retry will wait as well. If the last request failed and the library would have slept, the sleep should not sleep much longer than the context deadline. It will not, of course, be perfect. However, it should help prevent the retry library from sleeping for an unreasonably long time after your context expires.
+
+### Outputs
+
+```
+getting 573ns
+getting 50.650745ms
+getting 100.387843ms
+getting 200.851694ms
+getting 400.830581ms
+getting 500.871094ms
+getting 500.916346ms
+getting 245.670663ms
+context deadline exceeded
+total time 2.000234103s
+```
+
+Because I have no service running on port 9999 on my localhost, this emulates a network timeout. You can see that this retries 10 times, exponentially backing off until it reaches 500ms, at which point it caps out and will not exceed the MaxWaitBetweenAttempts.
+
+As you can see, after the context deadline of 2 seconds is exceeded, a 500ms sleep is interrupted and reduced to 245.66ms. The retrier then continues to attempt to execute the code again. Since Request is context-aware, the http.Client will not execute the request. We catch the DeadlineExceeded error and return it immediately to prevent the retry library from executing again.

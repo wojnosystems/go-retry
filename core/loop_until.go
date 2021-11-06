@@ -2,8 +2,7 @@ package core
 
 import (
 	"context"
-	"github.com/wojnosystems/go-retry/retryAgain"
-	"github.com/wojnosystems/go-retry/retryStop"
+	"github.com/wojnosystems/go-retry/retryError"
 )
 
 // LoopUntil will continuously call the callback (cb) until continueLooping returns false.
@@ -27,11 +26,11 @@ func LoopUntil(ctx context.Context, cb CallbackFunc, wait DelayBetweenAttemptsFu
 		}
 		// call the callback, record the response
 		err = cb()
-		if err == retryStop.Success {
+		if err == retryError.StopSuccess {
 			// attempt succeeded, no need to wait or try again
 			return
 		}
-		if v, ok := err.(retryAgain.Wrapper); !ok {
+		if v, ok := err.(retryError.AgainWrapper); !ok {
 			// error was no retryable, stop retrying without waiting
 			return err
 		} else {

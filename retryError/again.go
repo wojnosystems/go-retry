@@ -1,9 +1,14 @@
-package retryAgain
+package retryError
 
-// Error wraps an error and lets the library know it needs to retry
+type AgainWrapper interface {
+	Error() string
+	Err() error
+}
+
+// Again wraps an error and lets the library know it needs to retry
 // This was a library decision: most errors should cause the retry system to stop retrying
 // Only a certain subset of errors are retryable, usually network-related timeouts
-func Error(err error) Wrapper {
+func Again(err error) AgainWrapper {
 	return &again{
 		wrapped: err,
 	}

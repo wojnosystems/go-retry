@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/wojnosystems/go-retry/core"
 	"github.com/wojnosystems/go-retry/mocks"
-	"github.com/wojnosystems/go-retry/retryStop"
+	"github.com/wojnosystems/go-retry/retryError"
 	"time"
 )
 
@@ -34,7 +34,7 @@ var _ = Describe("LoopForever", func() {
 					mocks.ErrRetry,
 					mocks.ErrRetry,
 					mocks.ErrRetry,
-					retryStop.Success,
+					retryError.StopSuccess,
 				},
 			}
 		})
