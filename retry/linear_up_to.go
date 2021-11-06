@@ -16,8 +16,20 @@ type LinearUpTo struct {
 	MaxAttempts                uint
 }
 
+func NewLinearUpTo(
+	initialWaitBetweenAttempts time.Duration,
+	growthFactor float64,
+	maxAttempts uint,
+) *LinearUpTo {
+	return &LinearUpTo{
+		InitialWaitBetweenAttempts: initialWaitBetweenAttempts,
+		GrowthFactor:               growthFactor,
+		MaxAttempts:                maxAttempts,
+	}
+}
+
 func (c *LinearUpTo) Retry(ctx context.Context, cb core.CallbackFunc) (err error) {
-	return core.LoopUpTo(cb, func(i uint64) {
+	return core.LoopUpTo(ctx, cb, func(i uint64) {
 		sleepTime := linearSleepTime(c.InitialWaitBetweenAttempts, c.GrowthFactor, i)
 		core.Sleep(ctx, sleepTime)
 	}, uint64(c.MaxAttempts))

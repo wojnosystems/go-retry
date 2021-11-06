@@ -14,13 +14,16 @@ type Linear struct {
 	GrowthFactor               float64
 }
 
+func NewLinear(initialWaitBetweenAttempts time.Duration, growthFactor float64) *Linear {
+	return &Linear{
+		InitialWaitBetweenAttempts: initialWaitBetweenAttempts,
+		GrowthFactor:               growthFactor,
+	}
+}
+
 func (c *Linear) Retry(ctx context.Context, cb core.CallbackFunc) (err error) {
-	return core.LoopForever(cb, func(i uint64) {
+	return core.LoopForever(ctx, cb, func(i uint64) {
 		sleepTime := linearSleepTime(c.InitialWaitBetweenAttempts, c.GrowthFactor, i)
 		core.Sleep(ctx, sleepTime)
 	})
-}
-
-func linearSleepTime(initial time.Duration, growthFactor float64, iteration uint64) time.Duration {
-	return time.Duration(float64(initial) + (float64(initial) * growthFactor * float64(iteration)))
 }

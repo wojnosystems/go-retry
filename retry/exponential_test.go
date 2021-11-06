@@ -1,57 +1,55 @@
-package retry
+package retry_test
 
 import (
+	"context"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	"github.com/wojnosystems/go-retry/mocks"
+	"github.com/wojnosystems/go-retry/retry"
 	"github.com/wojnosystems/go-retry/retryStop"
-	"testing"
 	"time"
 )
 
-func TestExponential_Retry(t *testing.T) {
-	cases := map[string]struct {
-		config *Exponential
-		retryOccurs
-	}{
-		"succeeds the first time it returns quickly": {
-			config: &Exponential{
-				InitialWaitBetweenAttempts: 1 * time.Second,
-				GrowthFactor:               0.2,
-			},
-			retryOccurs: retryOccurs{
-				errs:                  []error{retryStop.Success},
-				expectedDurationLower: time.Duration(0),
-				expectedDurationUpper: 500 * time.Millisecond,
-			},
-		},
-		"backs off and succeeds at 5 times": {
-			config: &Exponential{
-				InitialWaitBetweenAttempts: 10 * time.Millisecond,
-				GrowthFactor:               1.0,
-			},
-			retryOccurs: retryOccurs{
-				errs: []error{errAgain, errAgain, errAgain, errAgain, retryStop.Success},
-				// 10ms + 20ms + 40ms + 80ms = 150ms
-				expectedDurationLower: 145 * time.Millisecond,
-				expectedDurationUpper: 155 * time.Millisecond,
-			},
-		},
-		"backs off and errors at 5 times": {
-			config: &Exponential{
-				InitialWaitBetweenAttempts: 10 * time.Millisecond,
-				GrowthFactor:               1.0,
-			},
-			retryOccurs: retryOccurs{
-				errs:        []error{errAgain, errAgain, errAgain, errAgain},
-				expectedErr: errOutOfErrs,
-				// 10ms + 20ms + 40ms + 80ms = 150ms
-				expectedDurationLower: 145 * time.Millisecond,
-				expectedDurationUpper: 155 * time.Millisecond,
-			},
-		},
-	}
+var _ = Describe("Exponential", func() {
+	var (
+		ctx    context.Context
+		cancel context.CancelFunc
+	)
+	BeforeEach(func() {
+		ctx, cancel = context.WithTimeout(context.Background(), 1*time.Second)
+	})
+	AfterEach(func() {
+		cancel()
+	})
 
-	for caseName, c := range cases {
-		t.Run(caseName, func(t *testing.T) {
-			c.Assert(t, c.config)
+	When("multiple failures", func() {
+		var (
+			mock *mocks.Callback
+		)
+		BeforeEach(func() {
+			mock = &mocks.Callback{Responses: []error{
+				mocks.ErrRetry, // wait 1 * (2)^0 = 1, total 1
+				mocks.ErrRetry, // wait 1 * (2)^1 = 2, total 3
+				mocks.ErrRetry, // wait 1 * (2)^2 = 4, total 7
+				mocks.ErrRetry, // wait 1 * (2)^3 = 8, total 15
+				mocks.ErrRetry, // wait 1 * (2)^4 = 16, total 31
+				retryStop.Success,
+			}}
 		})
-	}
-}
+		When("under retry limit", func() {
+			var (
+				retrier retry.Retrier
+			)
+			BeforeEach(func() {
+				retrier = retry.NewExponential(1*timeUnit, 1.0)
+			})
+			It("takes the appropriate amount of time", func() {
+				elapsed := mocks.DurationElapsed(func() {
+					_ = retrier.Retry(ctx, mock.Next())
+				})
+				Expect(elapsed).Should(BeNumerically(">", 31*timeUnit))
+				Expect(elapsed).Should(BeNumerically("<", 41*timeUnit))
+			})
+		})
+	})
+})

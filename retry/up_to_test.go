@@ -1,70 +1,86 @@
-package retry
+package retry_test
 
 import (
+	"context"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	"github.com/wojnosystems/go-retry/mocks"
+	"github.com/wojnosystems/go-retry/retry"
+	"github.com/wojnosystems/go-retry/retryAgain"
 	"github.com/wojnosystems/go-retry/retryStop"
-	"testing"
 	"time"
 )
 
-func TestUpTo_Retry(t *testing.T) {
-	cases := map[string]struct {
-		config *UpTo
-		retryOccurs
-	}{
-		"succeeds the first time it returns quickly": {
-			config: &UpTo{
-				WaitBetweenAttempts: 1 * time.Second,
-				MaxAttempts:         5,
-			},
-			retryOccurs: retryOccurs{
-				errs:                  []error{retryStop.Success},
-				expectedDurationLower: time.Duration(0),
-				expectedDurationUpper: 500 * time.Millisecond,
-			},
-		},
-		"after 5 retries it succeeds": {
-			config: &UpTo{
-				WaitBetweenAttempts: 10 * time.Millisecond,
-				MaxAttempts:         6,
-			},
-			retryOccurs: retryOccurs{
-				errs: []error{errAgain, errAgain, errAgain, errAgain, retryStop.Success},
-				// 10 + 10 + 10 + 10 = 40ms
-				expectedDurationLower: 35 * time.Millisecond,
-				expectedDurationUpper: 45 * time.Millisecond,
-			},
-		},
-		"after 5 times it returns the retry error": {
-			config: &UpTo{
-				WaitBetweenAttempts: 10 * time.Millisecond,
-				MaxAttempts:         5,
-			},
-			retryOccurs: retryOccurs{
-				errs:        []error{errAgain, errAgain, errAgain, errAgain, errAgain},
-				expectedErr: errAgain.Err(),
-				// 10 + 10 + 10 + 10 = 40ms
-				expectedDurationLower: 35 * time.Millisecond,
-				expectedDurationUpper: 45 * time.Millisecond,
-			},
-		},
-		"after un-retryable error it returns the error": {
-			config: &UpTo{
-				WaitBetweenAttempts: 10 * time.Millisecond,
-				MaxAttempts:         5,
-			},
-			retryOccurs: retryOccurs{
-				errs:        []error{errAgain, errAgain, errFake},
-				expectedErr: errFake,
-				// 10 + 10 = 20ms
-				expectedDurationLower: 15 * time.Millisecond,
-				expectedDurationUpper: 25 * time.Millisecond,
-			},
-		},
-	}
+var _ = Describe("UpTo", func() {
+	var (
+		ctx    context.Context
+		cancel context.CancelFunc
+		mock   *mocks.Callback
+	)
 
-	for caseName, c := range cases {
-		t.Run(caseName, func(t *testing.T) {
-			c.Assert(t, c.config)
+	BeforeEach(func() {
+		ctx, cancel = context.WithTimeout(context.Background(), 1*time.Second)
+	})
+
+	AfterEach(func() {
+		cancel()
+	})
+
+	When("succeeds the first time", func() {
+		BeforeEach(func() {
+			mock = &mocks.Callback{
+				Responses: []error{
+					retryStop.Success,
+				},
+			}
 		})
-	}
-}
+		It("does not wait", func() {
+			subject := &retry.UpTo{MaxAttempts: 1000, WaitBetweenAttempts: 1 * time.Hour}
+			err := subject.Retry(ctx, mock.Next())
+			Expect(err).ShouldNot(HaveOccurred())
+			Expect(mock.TimesRun()).Should(Equal(1))
+		})
+	})
+
+	When("succeeds after 5 times", func() {
+		BeforeEach(func() {
+			mock = &mocks.Callback{
+				Responses: []error{
+					retryAgain.Error(mocks.ErrRetryReason),
+					retryAgain.Error(mocks.ErrRetryReason),
+					retryAgain.Error(mocks.ErrRetryReason),
+					retryAgain.Error(mocks.ErrRetryReason),
+					retryAgain.Error(mocks.ErrRetryReason),
+					retryStop.Success,
+				},
+			}
+		})
+		It("succeeds", func() {
+			subject := &retry.UpTo{MaxAttempts: 10000, WaitBetweenAttempts: 0}
+			err := subject.Retry(ctx, mock.Next())
+			Expect(err).ShouldNot(HaveOccurred())
+			Expect(mock.TimesRun()).Should(Equal(6))
+		})
+		It("takes at least 4 milliseconds", func() {
+			subject := &retry.UpTo{MaxAttempts: 10000, WaitBetweenAttempts: 1 * timeUnit}
+			elapsed := mocks.DurationElapsed(func() {
+				_ = subject.Retry(ctx, mock.Next())
+			})
+			Expect(elapsed).Should(BeNumerically(">=", 4*timeUnit))
+		})
+	})
+	When("retries exhausted", func() {
+		It("fails", func() {
+			subject := &retry.UpTo{MaxAttempts: 1, WaitBetweenAttempts: 0}
+			err := subject.Retry(ctx, mocks.AlwaysRetries())
+			Expect(err).Should(Equal(mocks.ErrRetryReason))
+		})
+	})
+	When("error is not retryable", func() {
+		It("fails", func() {
+			subject := &retry.UpTo{MaxAttempts: 1, WaitBetweenAttempts: 0}
+			err := subject.Retry(ctx, mocks.AlwaysFails())
+			Expect(err).Should(Equal(mocks.ErrThatCannotBeRetried))
+		})
+	})
+})

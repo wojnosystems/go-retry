@@ -1,19 +1,21 @@
-package retry
+package retry_test
 
 import (
 	"context"
-	"errors"
-	"github.com/stretchr/testify/assert"
-	"github.com/wojnosystems/go-retry/retryAgain"
-	"testing"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	"github.com/wojnosystems/go-retry/retry"
+	"github.com/wojnosystems/go-retry/retryStop"
 )
 
-func TestSkip_Retry(t *testing.T) {
-	called := false
-	skipErr := (&Skip{}).Retry(context.Background(), func() (err error) {
-		called = true
-		return retryAgain.Error(errors.New("fake"))
+var _ = Describe("Skip", func() {
+	It("does not call the callback", func() {
+		wasCalled := false
+		err := retry.Skip.Retry(context.Background(), func() (err error) {
+			wasCalled = true
+			return retryStop.Success
+		})
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(wasCalled).Should(BeFalse())
 	})
-	assert.NoError(t, skipErr)
-	assert.False(t, called)
-}
+})

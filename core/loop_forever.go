@@ -1,26 +1,15 @@
 package core
 
 import (
-	"github.com/wojnosystems/go-retry/retryAgain"
-	"github.com/wojnosystems/go-retry/retryStop"
-	"math"
+	"context"
 )
+
+func loopForever(_ uint64) bool {
+	return true
+}
 
 // LoopForever will continuously call the callback (cb) until it succeeds or
 // returns a non-retryable error
-func LoopForever(cb CallbackFunc, wait DelayBetweenAttemptsFunc) (err error) {
-	i := uint64(0)
-	for {
-		err = cb()
-		if err == retryStop.Success {
-			return
-		}
-		if !retryAgain.IsAgain(err) {
-			return err
-		}
-		wait(i)
-		if i < math.MaxUint64 {
-			i++
-		}
-	}
+func LoopForever(ctx context.Context, cb CallbackFunc, wait DelayBetweenAttemptsFunc) (err error) {
+	return LoopUntil(ctx, cb, wait, loopForever)
 }

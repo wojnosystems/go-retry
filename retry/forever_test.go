@@ -1,54 +1,55 @@
-package retry
+package retry_test
 
 import (
+	"context"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	"github.com/wojnosystems/go-retry/mocks"
+	"github.com/wojnosystems/go-retry/retry"
 	"github.com/wojnosystems/go-retry/retryStop"
-	"testing"
 	"time"
 )
 
-func TestForever_Retry(t *testing.T) {
-	cases := map[string]struct {
-		config *Forever
-		retryOccurs
-	}{
-		"succeeds the first time it returns quickly": {
-			config: &Forever{
-				WaitBetweenAttempts: 1 * time.Second,
-			},
-			retryOccurs: retryOccurs{
-				errs:                  []error{retryStop.Success},
-				expectedDurationLower: time.Duration(0),
-				expectedDurationUpper: 500 * time.Millisecond,
-			},
-		},
-		"after 5 retries it succeeds": {
-			config: &Forever{
-				WaitBetweenAttempts: 10 * time.Millisecond,
-			},
-			retryOccurs: retryOccurs{
-				errs: []error{errAgain, errAgain, errAgain, errAgain, retryStop.Success},
-				// 10 + 10 + 10 + 10 = 40ms
-				expectedDurationLower: 35 * time.Millisecond,
-				expectedDurationUpper: 45 * time.Millisecond,
-			},
-		},
-		"un-retryable error after 5 retries it errors": {
-			config: &Forever{
-				WaitBetweenAttempts: 10 * time.Millisecond,
-			},
-			retryOccurs: retryOccurs{
-				errs:        []error{errAgain, errAgain, errAgain, errAgain, errAgain},
-				expectedErr: errOutOfErrs,
-				// 10 + 10 + 10 + 10 = 40ms
-				expectedDurationLower: 45 * time.Millisecond,
-				expectedDurationUpper: 55 * time.Millisecond,
-			},
-		},
-	}
+var _ = Describe("Forever", func() {
+	var (
+		ctx    context.Context
+		cancel context.CancelFunc
+	)
+	BeforeEach(func() {
+		ctx, cancel = context.WithTimeout(context.Background(), 1*time.Second)
+	})
+	AfterEach(func() {
+		cancel()
+	})
 
-	for caseName, c := range cases {
-		t.Run(caseName, func(t *testing.T) {
-			c.Assert(t, c.config)
+	When("multiple failures", func() {
+		var (
+			mock *mocks.Callback
+		)
+		BeforeEach(func() {
+			mock = &mocks.Callback{Responses: []error{
+				mocks.ErrRetry, // wait 1, total 1
+				mocks.ErrRetry, // wait 1, total 2
+				mocks.ErrRetry, // wait 1, total 3
+				mocks.ErrRetry, // wait 1, total 4
+				mocks.ErrRetry, // wait 1, total 5
+				retryStop.Success,
+			}}
 		})
-	}
-}
+		When("under retry limit", func() {
+			var (
+				retrier retry.Retrier
+			)
+			BeforeEach(func() {
+				retrier = retry.NewForever(1 * timeUnit)
+			})
+			It("takes the appropriate amount of time", func() {
+				elapsed := mocks.DurationElapsed(func() {
+					_ = retrier.Retry(ctx, mock.Next())
+				})
+				Expect(elapsed).Should(BeNumerically(">", 5*timeUnit))
+				Expect(elapsed).Should(BeNumerically("<", 10*timeUnit))
+			})
+		})
+	})
+})

@@ -2,15 +2,27 @@ package retryAgain
 
 import (
 	"errors"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	. "github.com/onsi/gomega"
 	"testing"
 )
 
 var errFake = errors.New("fake")
 
 func TestAgain_Err(t *testing.T) {
+	g := NewWithT(t)
 	err := Error(errFake)
-	require.Error(t, err)
-	assert.EqualError(t, errFake, err.Error())
+	g.Expect(err).Should(HaveOccurred())
+	g.Expect(err.Err()).Should(Equal(errFake))
+}
+
+func TestAgain_Error(t *testing.T) {
+	g := NewWithT(t)
+	err := Error(errFake)
+	g.Expect(err.Error()).Should(Equal(errFake.Error()))
+}
+
+func TestAgain_IsAgain(t *testing.T) {
+	g := NewWithT(t)
+	err := Error(errFake)
+	g.Expect(IsAgain(err)).Should(BeTrue())
 }

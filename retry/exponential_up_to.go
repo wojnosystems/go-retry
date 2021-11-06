@@ -16,8 +16,20 @@ type ExponentialUpTo struct {
 	MaxAttempts                uint
 }
 
+func NewExponentialUpTo(
+	initialWaitBetweenAttempts time.Duration,
+	growthFactor float64,
+	maxAttempts uint,
+) *ExponentialUpTo {
+	return &ExponentialUpTo{
+		InitialWaitBetweenAttempts: initialWaitBetweenAttempts,
+		GrowthFactor:               growthFactor,
+		MaxAttempts:                maxAttempts,
+	}
+}
+
 func (c *ExponentialUpTo) Retry(ctx context.Context, cb core.CallbackFunc) (err error) {
-	return core.LoopUpTo(cb, func(i uint64) {
+	return core.LoopUpTo(ctx, cb, func(i uint64) {
 		sleepTime := exponentialSleepTime(c.InitialWaitBetweenAttempts, c.GrowthFactor, i)
 		core.Sleep(ctx, sleepTime)
 	}, uint64(c.MaxAttempts))

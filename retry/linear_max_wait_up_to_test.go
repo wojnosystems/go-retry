@@ -1,78 +1,74 @@
-package retry
+package retry_test
 
 import (
+	"context"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	"github.com/wojnosystems/go-retry/mocks"
+	"github.com/wojnosystems/go-retry/retry"
 	"github.com/wojnosystems/go-retry/retryStop"
-	"testing"
 	"time"
 )
 
-func TestLinearMaxWaitUpTo_Retry(t *testing.T) {
-	cases := map[string]struct {
-		config *LinearMaxWaitUpTo
-		retryOccurs
-	}{
-		"succeeds the first time it returns quickly": {
-			config: &LinearMaxWaitUpTo{
-				InitialWaitBetweenAttempts: 1 * time.Second,
-				GrowthFactor:               0.2,
-				MaxAttempts:                10,
-				MaxWaitBetweenAttempts:     2 * time.Second,
-			},
-			retryOccurs: retryOccurs{
-				errs:                  []error{retryStop.Success},
-				expectedDurationLower: time.Duration(0),
-				expectedDurationUpper: 500 * time.Millisecond,
-			},
-		},
-		"backs off and succeeds at 5 times": {
-			config: &LinearMaxWaitUpTo{
-				InitialWaitBetweenAttempts: 10 * time.Millisecond,
-				GrowthFactor:               1.0,
-				MaxAttempts:                10,
-				MaxWaitBetweenAttempts:     15 * time.Millisecond,
-			},
-			retryOccurs: retryOccurs{
-				errs: []error{errAgain, errAgain, errAgain, errAgain, retryStop.Success},
-				// 10ms + 15ms + 15.0ms + 15.0ms = 55ms
-				expectedDurationLower: 50 * time.Millisecond,
-				expectedDurationUpper: 60 * time.Millisecond,
-			},
-		},
-		"backs off and runs out of retries": {
-			config: &LinearMaxWaitUpTo{
-				InitialWaitBetweenAttempts: 10 * time.Millisecond,
-				GrowthFactor:               0.2,
-				MaxAttempts:                5,
-				MaxWaitBetweenAttempts:     15 * time.Millisecond,
-			},
-			retryOccurs: retryOccurs{
-				errs:        []error{errAgain, errAgain, errAgain, errAgain, errAgain},
-				expectedErr: errAgain.Err(),
-				// 10ms + 15ms + 15ms + 15ms = 55ms
-				expectedDurationLower: 50 * time.Millisecond,
-				expectedDurationUpper: 60 * time.Millisecond,
-			},
-		},
-		"backs off and errors at 5": {
-			config: &LinearMaxWaitUpTo{
-				InitialWaitBetweenAttempts: 10 * time.Millisecond,
-				GrowthFactor:               0.2,
-				MaxAttempts:                6,
-				MaxWaitBetweenAttempts:     15 * time.Millisecond,
-			},
-			retryOccurs: retryOccurs{
-				errs:        []error{errAgain, errAgain, errAgain, errAgain, errAgain},
-				expectedErr: errOutOfErrs,
-				// 10ms + 15ms + 15ms + 15ms + 15 = 70ms
-				expectedDurationLower: 65 * time.Millisecond,
-				expectedDurationUpper: 75 * time.Millisecond,
-			},
-		},
-	}
+var _ = Describe("LinearRetry", func() {
+	var (
+		ctx    context.Context
+		cancel context.CancelFunc
+	)
+	BeforeEach(func() {
+		ctx, cancel = context.WithTimeout(context.Background(), 1*time.Second)
+	})
+	AfterEach(func() {
+		cancel()
+	})
 
-	for caseName, c := range cases {
-		t.Run(caseName, func(t *testing.T) {
-			c.Assert(t, c.config)
+	When("multiple failures", func() {
+		var (
+			mock *mocks.Callback
+		)
+		BeforeEach(func() {
+			mock = &mocks.Callback{Responses: []error{
+				mocks.ErrRetry, // 1 + (1*1*0) = 1, total 1
+				mocks.ErrRetry, // 1 + (1*1*1) = 2, total 3
+				mocks.ErrRetry, // 1 + (1*1*2) = 3, total 6
+				mocks.ErrRetry, // 1 + (1*1*3) = 4, total 10
+				mocks.ErrRetry, // 1 + (1*1*4) = 5, total 15
+				mocks.ErrRetry, // 1 + (1*1*5) = 6 (5), total 21 (20) (5 is max wait time)
+				mocks.ErrRetry, // 1 + (1*1*6) = 7 (5), total 28 (25)
+				mocks.ErrRetry, // 1 + (1*1*6) = 8 (5), total 36 (30)
+				mocks.ErrRetry, // 1 + (1*1*6) = 9 (5), total 45 (35)
+				retryStop.Success,
+			}}
 		})
-	}
-}
+		When("under retry limit", func() {
+			var (
+				retrier retry.Retrier
+			)
+			BeforeEach(func() {
+				retrier = retry.NewLinearMaxWaitUpTo(1*timeUnit, 1.0, 10, 5*timeUnit)
+			})
+			It("takes the appropriate amount of time", func() {
+				elapsed := mocks.DurationElapsed(func() {
+					_ = retrier.Retry(ctx, mock.Next())
+				})
+				Expect(elapsed).Should(BeNumerically(">", 35*timeUnit))
+				Expect(elapsed).Should(BeNumerically("<", 45*timeUnit))
+			})
+		})
+		When("over retry limit", func() {
+			var (
+				retrier retry.Retrier
+			)
+			BeforeEach(func() {
+				retrier = retry.NewLinearMaxWaitUpTo(1*timeUnit, 1.0, 4, 5*timeUnit)
+			})
+			It("takes the appropriate amount of time", func() {
+				elapsed := mocks.DurationElapsed(func() {
+					_ = retrier.Retry(ctx, mock.Next())
+				})
+				Expect(elapsed).Should(BeNumerically(">", 6*timeUnit))
+				Expect(elapsed).Should(BeNumerically("<", 16*timeUnit))
+			})
+		})
+	})
+})

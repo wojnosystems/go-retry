@@ -1,7 +1,7 @@
-package core
+package retry
 
 import (
-	"github.com/stretchr/testify/assert"
+	"github.com/onsi/gomega"
 	"testing"
 	"time"
 )
@@ -25,8 +25,9 @@ func TestMinDuration(t *testing.T) {
 
 	for caseName, c := range cases {
 		t.Run(caseName, func(t *testing.T) {
-			actual := MinDuration(c.a, c.b)
-			assert.Equal(t, c.expected, actual)
+			g := gomega.NewWithT(t)
+			actual := minDuration(c.a, c.b)
+			g.Expect(actual).Should(gomega.Equal(c.expected))
 		})
 	}
 }

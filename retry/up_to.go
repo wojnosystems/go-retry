@@ -16,7 +16,7 @@ type UpTo struct {
 }
 
 func (c *UpTo) Retry(ctx context.Context, cb core.CallbackFunc) (err error) {
-	return core.LoopUpTo(cb, func(i uint64) {
+	return core.LoopUpTo(ctx, cb, func(i uint64) {
 		core.Sleep(ctx, c.WaitBetweenAttempts)
 	}, uint64(c.MaxAttempts))
 }

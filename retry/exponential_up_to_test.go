@@ -1,74 +1,57 @@
-package retry
+package retry_test
 
 import (
+	"context"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	"github.com/wojnosystems/go-retry/mocks"
+	"github.com/wojnosystems/go-retry/retry"
 	"github.com/wojnosystems/go-retry/retryStop"
-	"testing"
 	"time"
 )
 
-func TestExponentialUpTo_Retry(t *testing.T) {
-	cases := map[string]struct {
-		config *ExponentialUpTo
-		retryOccurs
-	}{
-		"succeeds the first time it returns quickly": {
-			config: &ExponentialUpTo{
-				InitialWaitBetweenAttempts: 1 * time.Second,
-				GrowthFactor:               0.2,
-				MaxAttempts:                10,
-			},
-			retryOccurs: retryOccurs{
-				errs:                  []error{retryStop.Success},
-				expectedDurationLower: time.Duration(0),
-				expectedDurationUpper: 500 * time.Millisecond,
-			},
-		},
-		"backs off and retries 5 times then succeeds": {
-			config: &ExponentialUpTo{
-				InitialWaitBetweenAttempts: 10 * time.Millisecond,
-				GrowthFactor:               0.5,
-				MaxAttempts:                10,
-			},
-			retryOccurs: retryOccurs{
-				errs: []error{errAgain, errAgain, errAgain, errAgain, retryStop.Success},
-				// 10ms + 15ms + 22.5ms + 33.75ms = 81.25ms
-				expectedDurationLower: 76 * time.Millisecond,
-				expectedDurationUpper: 87 * time.Millisecond,
-			},
-		},
-		"backs off and runs out of retries": {
-			config: &ExponentialUpTo{
-				InitialWaitBetweenAttempts: 10 * time.Millisecond,
-				GrowthFactor:               0.5,
-				MaxAttempts:                5,
-			},
-			retryOccurs: retryOccurs{
-				errs:        []error{errAgain, errAgain, errAgain, errAgain, errAgain},
-				expectedErr: errAgain.Err(),
-				// 10ms + 15ms + 22.5ms + 33.75ms = 81.25ms
-				expectedDurationLower: 76 * time.Millisecond,
-				expectedDurationUpper: 87 * time.Millisecond,
-			},
-		},
-		"backs off and fails at 5 times": {
-			config: &ExponentialUpTo{
-				InitialWaitBetweenAttempts: 10 * time.Millisecond,
-				GrowthFactor:               0.5,
-				MaxAttempts:                5,
-			},
-			retryOccurs: retryOccurs{
-				errs:        []error{errAgain, errAgain, errAgain, errAgain},
-				expectedErr: errOutOfErrs,
-				// 10ms + 15ms + 22.5ms + 33.75ms = 81.25ms
-				expectedDurationLower: 76 * time.Millisecond,
-				expectedDurationUpper: 87 * time.Millisecond,
-			},
-		},
-	}
+var _ = Describe("ExponentialUpTo", func() {
+	var (
+		ctx    context.Context
+		cancel context.CancelFunc
+	)
+	BeforeEach(func() {
+		ctx, cancel = context.WithTimeout(context.Background(), 1*time.Second)
+	})
+	AfterEach(func() {
+		cancel()
+	})
 
-	for caseName, c := range cases {
-		t.Run(caseName, func(t *testing.T) {
-			c.Assert(t, c.config)
+	When("multiple failures", func() {
+		var (
+			mock *mocks.Callback
+		)
+		BeforeEach(func() {
+			mock = &mocks.Callback{Responses: []error{
+				mocks.ErrRetry, // wait 1 * (2)^0 = 1, total 1
+				mocks.ErrRetry, // wait 1 * (2)^1 = 2, total 3
+				mocks.ErrRetry, // wait 1 * (2)^2 = 4, total 7
+				mocks.ErrRetry, // wait 1 * (2)^3 = 8, total 15
+				mocks.ErrRetry, // wait 1 * (2)^4 = 16, total 31
+				mocks.ErrRetry, // wait 1 * (2)^5 = 32, total 63
+				mocks.ErrRetry, // wait 1 * (2)^6 = 64, total 127
+				retryStop.Success,
+			}}
 		})
-	}
-}
+		When("max attempts reached", func() {
+			var (
+				retrier retry.Retrier
+			)
+			BeforeEach(func() {
+				retrier = retry.NewExponentialUpTo(1*timeUnit, 1.0, 6)
+			})
+			It("takes the appropriate amount of time", func() {
+				elapsed := mocks.DurationElapsed(func() {
+					_ = retrier.Retry(ctx, mock.Next())
+				})
+				Expect(elapsed).Should(BeNumerically(">", 31*timeUnit))
+				Expect(elapsed).Should(BeNumerically("<", 41*timeUnit))
+			})
+		})
+	})
+})

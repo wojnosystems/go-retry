@@ -1,38 +1,37 @@
-package retry
+package retry_test
 
 import (
+	"context"
+	"errors"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	"github.com/wojnosystems/go-retry/retry"
+	"github.com/wojnosystems/go-retry/retryAgain"
 	"github.com/wojnosystems/go-retry/retryStop"
-	"testing"
-	"time"
 )
 
-func TestNever_Retry(t *testing.T) {
-	cases := map[string]struct {
-		config *UpTo
-		retryOccurs
-	}{
-		"succeeds the first time it returns quickly": {
-			config: Never,
-			retryOccurs: retryOccurs{
-				errs:                  []error{retryStop.Success},
-				expectedDurationLower: time.Duration(0),
-				expectedDurationUpper: 500 * time.Millisecond,
-			},
-		},
-		"fails once": {
-			config: Never,
-			retryOccurs: retryOccurs{
-				errs:                  []error{errAgain, errAgain},
-				expectedErr:           errAgain,
-				expectedDurationLower: 0,
-				expectedDurationUpper: 10 * time.Millisecond,
-			},
-		},
-	}
-
-	for caseName, c := range cases {
-		t.Run(caseName, func(t *testing.T) {
-			c.Assert(t, c.config)
+var _ = Describe("Never", func() {
+	When("success", func() {
+		It("calls back exactly once", func() {
+			wasCalled := false
+			err := retry.Never.Retry(context.Background(), func() (err error) {
+				wasCalled = true
+				return retryStop.Success
+			})
+			Expect(err).ShouldNot(HaveOccurred())
+			Expect(wasCalled).Should(BeTrue())
 		})
-	}
-}
+	})
+	When("fail", func() {
+		It("calls back exactly once", func() {
+			expectedErr := errors.New("intentionally fails")
+			wasCalled := false
+			err := retry.Never.Retry(context.Background(), func() (err error) {
+				wasCalled = true
+				return retryAgain.Error(expectedErr)
+			})
+			Expect(err).Should(HaveOccurred())
+			Expect(wasCalled).Should(BeTrue())
+		})
+	})
+})

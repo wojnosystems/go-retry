@@ -1,50 +1,53 @@
-package core
+package core_test
 
 import (
 	"context"
-	"github.com/stretchr/testify/assert"
-	"testing"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	"github.com/wojnosystems/go-retry/core"
+	"github.com/wojnosystems/go-retry/mocks"
 	"time"
 )
 
-func TestSleep(t *testing.T) {
-	cases := map[string]struct {
-		sleepDuration time.Duration
-		makeContext   func(cb func(ctx context.Context))
-		expectedLower time.Duration
-		expectedUpper time.Duration
-	}{
-		"sleep is longer": {
-			sleepDuration: 10 * time.Second,
-			makeContext: func(cb func(ctx context.Context)) {
-				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
-				defer cancel()
-				cb(ctx)
-			},
-			expectedLower: 5 * time.Millisecond,
-			expectedUpper: 15 * time.Millisecond,
-		},
-		"ctx is longer": {
-			sleepDuration: 10 * time.Millisecond,
-			makeContext: func(cb func(ctx context.Context)) {
-				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-				defer cancel()
-				cb(ctx)
-			},
-			expectedLower: 5 * time.Millisecond,
-			expectedUpper: 15 * time.Millisecond,
-		},
-	}
+const (
+	aVeryLongTime  = 24 * time.Hour
+	aShortTime     = 1 * time.Minute
+	aVeryShortTime = 1 * time.Millisecond
+)
 
-	for caseName, c := range cases {
-		t.Run(caseName, func(t *testing.T) {
-			start := time.Now()
-			c.makeContext(func(ctx context.Context) {
-				Sleep(ctx, c.sleepDuration)
-			})
-			duration := time.Now().Sub(start)
-			assert.Greater(t, duration, c.expectedLower)
-			assert.Less(t, duration, c.expectedUpper)
+var _ = Describe("Sleep", func() {
+	When("wait is longer than context", func() {
+		var (
+			ctx context.Context
+		)
+		BeforeEach(func() {
+			var cancel context.CancelFunc
+			ctx, cancel = context.WithCancel(context.Background())
+			cancel()
 		})
-	}
-}
+		It("does not wait", func() {
+			elapsed := mocks.DurationElapsed(func() {
+				core.Sleep(ctx, aVeryLongTime)
+			})
+			Expect(elapsed).Should(BeNumerically("<", aShortTime))
+		})
+	})
+	When("context is longer than wait", func() {
+		var (
+			ctx    context.Context
+			cancel context.CancelFunc
+		)
+		BeforeEach(func() {
+			ctx, cancel = context.WithCancel(context.Background())
+		})
+		AfterEach(func() {
+			cancel()
+		})
+		It("does not wait", func() {
+			elapsed := mocks.DurationElapsed(func() {
+				core.Sleep(ctx, aVeryShortTime)
+			})
+			Expect(elapsed).Should(BeNumerically("~", aVeryShortTime, 1*time.Millisecond))
+		})
+	})
+})
