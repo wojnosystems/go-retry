@@ -1,14 +1,14 @@
 # Overview
 
-A thread-safe, minimalistic yet flexible retry library for GoLang with context support.
+Retry blocks of code, limited by context deadlines & cancellations as well as multiple back off strategies and retry attempt limits. Recover the last error that triggered a retry or errors that should not be retried immediately.
 
-I wanted to use this for database connections, so I'd need to attempt a query or connection with the same retry configuration multiple times. I'd configure this once and re-use it for each request. I also wanted it to be re-usable and thread-safe.
+Any time the retry would sleep after an error, the sleep should never excessively exceed the deadline of the context. This is useful for use in servers which tend to have per-request deadlines. For example, if each endpoint in your server had 30 seconds to perform its tasks, and you have an exponential back off that would sleep and cause the request to take 45 seconds, the library will stop sleeping at the context deadline instead of allowing the sleep to continue for 15 additional seconds.
 
-I also wanted to be sure that any time the retry would sleep after an error, the sleep would never exceed the deadline of the context, which is useful for servers. For example, if each endpoint in your server had 30 seconds to perform its tasks, and you have an exponential back off that would sleep and cause the request to take 45 seconds, the library will stop sleeping at the context deadline instead of allowing the sleep to continue for 15 additional seconds.
+When the deadline is exceeded or the context is cancelled, your method _may_ be executed one more time. However, if just before the callback is invoked, the context is not yet Done, it will not be run. If your code also uses the same context, the error will be `context.DeadlineExceeded`. Never wrap in `retryError.Again()` otherwise retry could infinite loop (depending on which strategy you select). Should your callback complete and the context becomes Done, the wait duration will be curtailed as it is also restricted by contexts. This should ensure that retry-able blocks don't exceed the context by an unreasonable factor and make very reliable, and controllable code.
 
-When the deadline is exceeded, your method will be executed one more time. If your code also uses the same context, the error will be `context.DeadlineExceeded`, which you should never wrap in `retryError.Again()` otherwise retry could infinite loop (depending on which strategy you desire).
+Example use-case: Most of the errors returned by MySQL/Postgres aren't retryable. Query formatting issues or missing data, for example. The only time I really wanted to retry is if there was a network timeout or disconnect. Therefore, the default is to stop retrying on any error, unless `retry.Again` is returned. In this case, it will be retried unless we're at the limits. If you return `retry.Success`, then iteration stops and returns no error. The library can be made to invert this, you just need to wrap any errors to retry in retryError.Again.
 
-Most of the errors returned by MySQL/Postgres aren't retryable, like query formatting issues or missing data. The only time I really wanted to retry is if there was a networking timeout. Therefore, the default is to stop retrying on any error, unless `retry.Again` is returned. In this case, it will be retried unless we're at the limits. If you return `retry.Success`, then iteration stops and returns no error.
+These errors are returned to the calling code, so you can take a specific action in response to a specific error value.
 
 # Installing
 
@@ -34,7 +34,7 @@ Developers are encouraged to make functions that take in `error` and only wrap i
 
 ## Strategies
 
-There are several retry strategies available form this library for common retry patterns in increasing complexity:
+There are several retry strategies available form this library for common retry patterns in increasing complexity. You can find all of these under the `retry` package
 
 * **Skip**: will never execute the callback and will return retryError.StopSuccess (nil). Useful for testing and mocking things you want to test that don't actually do anything.
 * **Never**: will never retry, but will execute the callback exactly once. Useful for testing and mocking when you just want to run something once
