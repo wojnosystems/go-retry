@@ -1,6 +1,6 @@
 package retryMocks
 
-// AlwaysRetries will always return a retryable error
+// AlwaysRetries is a call-back that will always return a retryable error
 func AlwaysRetries() error {
 	return ErrRetryReason
 }

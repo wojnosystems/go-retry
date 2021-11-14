@@ -39,7 +39,7 @@ var _ = Describe("LinearUpTo", func() {
 		})
 		When("under retry limit", func() {
 			var (
-				subject retry.Retrier
+				subject retryStrategy
 			)
 			BeforeEach(func() {
 				subject = retry.NewLinearUpTo(1*timeUnit, 1.0, 10)
@@ -54,7 +54,7 @@ var _ = Describe("LinearUpTo", func() {
 		})
 		When("over retry limit", func() {
 			var (
-				subject retry.Retrier
+				subject retryStrategy
 			)
 			BeforeEach(func() {
 				subject = retry.NewLinearUpTo(1*timeUnit, 1.0, 4)

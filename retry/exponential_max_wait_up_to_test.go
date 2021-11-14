@@ -40,7 +40,7 @@ var _ = Describe("ExponentialMaxWaitUpTo", func() {
 		})
 		When("max attempts reached", func() {
 			var (
-				subject retry.Retrier
+				subject retryStrategy
 			)
 			BeforeEach(func() {
 				subject = retry.NewExponentialMaxWaitUpTo(1*timeUnit, 1.0, 5, 100*timeUnit)
@@ -55,7 +55,7 @@ var _ = Describe("ExponentialMaxWaitUpTo", func() {
 		})
 		When("max wait time reached", func() {
 			var (
-				subject retry.Retrier
+				subject retryStrategy
 			)
 			BeforeEach(func() {
 				subject = retry.NewExponentialMaxWaitUpTo(1*timeUnit, 1.0, 10, 20*timeUnit)

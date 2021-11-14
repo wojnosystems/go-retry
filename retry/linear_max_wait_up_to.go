@@ -12,6 +12,7 @@ import (
 // BackoffTime(i) = InitialWaitBetweenAttempts * (1 + GrowthFactor*i)
 // This is just like Linear and LinearUpTo, but also adds in a cap on the time spent waiting between requests
 type LinearMaxWaitUpTo struct {
+	retryStrategy
 	InitialWaitBetweenAttempts time.Duration
 	GrowthFactor               float64
 	MaxAttempts                uint

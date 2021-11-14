@@ -12,6 +12,7 @@ import (
 // where i [0,INF) and represents the number of times we've delayed after a failed attempt before
 // This is just like Exponential, except that it will also only execute a finite number of times before stopping
 type ExponentialUpTo struct {
+	retryStrategy
 	InitialWaitBetweenAttempts time.Duration
 	GrowthFactor               float64
 	MaxAttempts                uint

@@ -12,6 +12,7 @@ import (
 // where i [0,INF) and represents the number of times we've delayed after a failed attempt before
 // This is just like Exponential and ExponentialUpTo, but also adds in a cap on the time spent waiting between requests
 type ExponentialMaxWaitUpTo struct {
+	retryStrategy
 	InitialWaitBetweenAttempts time.Duration
 	GrowthFactor               float64
 	MaxAttempts                uint

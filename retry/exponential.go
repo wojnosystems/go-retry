@@ -12,6 +12,7 @@ import (
 // where i [0,INF) and represents the number of times we've delayed after a failed attempt before
 // should the callback always indicate a retry, this will retry forever
 type Exponential struct {
+	retryStrategy
 	InitialWaitBetweenAttempts time.Duration
 	GrowthFactor               float64
 }

@@ -9,6 +9,7 @@ import (
 
 // Forever will retry forever until your call succeeds or a non-retryable error is reported
 type Forever struct {
+	retryStrategy
 	WaitBetweenAttempts time.Duration
 }
 

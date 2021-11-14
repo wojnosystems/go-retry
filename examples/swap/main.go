@@ -6,8 +6,13 @@ import (
 	"fmt"
 	"github.com/wojnosystems/go-retry/retry"
 	"github.com/wojnosystems/go-retry/retryError"
+	"github.com/wojnosystems/go-retry/retryLoop"
 	"time"
 )
+
+type retryStrategy interface {
+	Retry(ctx context.Context, cb retryLoop.CallbackFunc) (err error)
+}
 
 func main() {
 	normal := &retry.LinearUpTo{
@@ -16,7 +21,7 @@ func main() {
 		MaxAttempts:                5,
 	}
 
-	var strategy retry.Retrier
+	var strategy retryStrategy
 	strategy = normal
 
 	_ = strategy.Retry(context.TODO(), func() (err error) {

@@ -11,6 +11,7 @@ import (
 // previous wait time each attempt. This allows for an un-bounded linearly-growing backoff.
 // BackoffTime(i) = InitialWaitBetweenAttempts * (1 + GrowthFactor*i)
 type Linear struct {
+	retryStrategy
 	InitialWaitBetweenAttempts time.Duration
 	GrowthFactor               float64
 }

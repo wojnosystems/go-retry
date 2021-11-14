@@ -9,6 +9,7 @@ import (
 
 // UpTo retries up to MaxAttempts and waits the same WaitBetweenAttempts duration between each retryable error.
 type UpTo struct {
+	retryStrategy
 	// WaitBetweenAttempts
 	WaitBetweenAttempts time.Duration
 
