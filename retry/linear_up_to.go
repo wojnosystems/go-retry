@@ -12,6 +12,7 @@ import (
 // BackoffTime(i) = InitialWaitBetweenAttempts * (1 + GrowthFactor*i)
 // This is just like Linear, except that it will also only execute a finite number of times before stopping
 type LinearUpTo struct {
+	retryStrategy
 	InitialWaitBetweenAttempts time.Duration
 	GrowthFactor               float64
 	MaxAttempts                uint
