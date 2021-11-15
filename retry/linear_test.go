@@ -28,7 +28,7 @@ var _ = Describe("LinearRetry", func() {
 
 	When("multiple failures", func() {
 		var (
-			subject retryStrategy
+			subject *retry.Linear
 			mock    *retryMocks.Callback
 		)
 		BeforeEach(func() {

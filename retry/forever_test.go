@@ -38,7 +38,7 @@ var _ = Describe("Forever", func() {
 		})
 		When("under retry limit", func() {
 			var (
-				subject retryStrategy
+				subject *retry.Forever
 			)
 			BeforeEach(func() {
 				subject = retry.NewForever(1 * timeUnit)

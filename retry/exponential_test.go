@@ -38,7 +38,7 @@ var _ = Describe("Exponential", func() {
 		})
 		When("under retry limit", func() {
 			var (
-				subject retryStrategy
+				subject *retry.Exponential
 			)
 			BeforeEach(func() {
 				subject = retry.NewExponential(1*timeUnit, 1.0)

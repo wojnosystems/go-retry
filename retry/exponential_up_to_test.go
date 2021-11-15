@@ -40,7 +40,7 @@ var _ = Describe("ExponentialUpTo", func() {
 		})
 		When("max attempts reached", func() {
 			var (
-				subject retryStrategy
+				subject *retry.ExponentialUpTo
 			)
 			BeforeEach(func() {
 				subject = retry.NewExponentialUpTo(1*timeUnit, 1.0, 6)

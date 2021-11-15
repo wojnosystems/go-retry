@@ -42,7 +42,7 @@ var _ = Describe("LinearRetry", func() {
 		})
 		When("under retry limit", func() {
 			var (
-				subject retryStrategy
+				subject *retry.LinearMaxWaitUpTo
 			)
 			BeforeEach(func() {
 				subject = retry.NewLinearMaxWaitUpTo(1*timeUnit, 1.0, 10, 5*timeUnit)
@@ -57,7 +57,7 @@ var _ = Describe("LinearRetry", func() {
 		})
 		When("over retry limit", func() {
 			var (
-				subject retryStrategy
+				subject *retry.LinearMaxWaitUpTo
 			)
 			BeforeEach(func() {
 				subject = retry.NewLinearMaxWaitUpTo(1*timeUnit, 1.0, 4, 5*timeUnit)
